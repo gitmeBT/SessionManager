@@ -14,7 +14,7 @@ export function App() {
 
   const [currentView, setCurrentView] = useState<View>('list')
   const [exitingView, setExitingView] = useState<View | null>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const prevDetail = useRef(!!detailSession)
 
   useEffect(() => {

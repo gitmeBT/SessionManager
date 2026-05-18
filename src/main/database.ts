@@ -81,7 +81,7 @@ export class DatabaseManager {
       .prepare('SELECT updated_at FROM unified_session WHERE id = ?')
       .get(session.id) as { updated_at: number | null } | undefined
 
-    if (existing && existing.updated_at && session.updated_at && existing.updated_at >= session.updatedAt) {
+    if (existing && existing.updated_at && session.updatedAt && existing.updated_at >= session.updatedAt) {
       return
     }
 

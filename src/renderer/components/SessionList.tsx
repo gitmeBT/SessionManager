@@ -122,7 +122,7 @@ export function SessionList() {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {sortedSessions.length === 0 && (
           <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
             No sessions found
@@ -134,7 +134,7 @@ export function SessionList() {
           return (
             <div key={key}>
               <div style={{
-                padding: '8px 16px 4px',
+                padding: '8px 16px 6px',
                 fontSize: 10,
                 fontWeight: 600,
                 color: 'var(--text-muted)',
@@ -142,7 +142,12 @@ export function SessionList() {
                 letterSpacing: 0.5,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8
+                gap: 8,
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+                background: 'var(--bg-secondary)',
+                borderBottom: '1px solid var(--border)'
               }}>
                 <span>{label}</span>
                 <span style={{ fontSize: 9, opacity: 0.6 }}>{items.length}</span>
