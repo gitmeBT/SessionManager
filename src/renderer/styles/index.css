@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-card: #1e2a4a;
+  --bg-hover: #2a2a4a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0b0;
+  --text-muted: #6a6a7a;
+  --accent: #4a9eff;
+  --accent-hover: #6ab4ff;
+  --green: #4ade80;
+  --orange: #fbbf24;
+  --border: #2a2a4a;
+  --border-soft: #222240;
+
+  --accent-opencode: #5e9eff;
+  --accent-claude: #d97757;
+  --accent-codex: #e0e0e0;
+
+  --accent-opencode-bg: rgba(94, 158, 255, 0.13);
+  --accent-claude-bg: rgba(217, 119, 87, 0.13);
+  --accent-codex-bg: rgba(224, 224, 224, 0.13);
+
+  --terminal-bg: #0d0d1a;
+  --terminal-fg: #e0e0e0;
+  --terminal-cursor: #4a9eff;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "Menlo", monospace;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f6f8;
+  --bg-card: #f0f0f4;
+  --bg-hover: #e8e8ec;
+  --text-primary: #1a1a2e;
+  --text-secondary: #5a5a6e;
+  --text-muted: #8a8a9a;
+  --accent: #3b7dd8;
+  --accent-hover: #5090e0;
+  --green: #22c55e;
+  --orange: #f59e0b;
+  --border: #e0e0e8;
+  --border-soft: #e8e8ec;
+
+  --accent-opencode: #3b7dd8;
+  --accent-claude: #d97757;
+  --accent-codex: #1a1a2e;
+
+  --accent-opencode-bg: rgba(59, 125, 216, 0.13);
+  --accent-claude-bg: rgba(217, 119, 87, 0.13);
+  --accent-codex-bg: rgba(26, 26, 46, 0.13);
+
+  --terminal-bg: #f5f6f8;
+  --terminal-fg: #1a1a2e;
+  --terminal-cursor: #3b7dd8;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  overflow: hidden;
+  height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+*:hover::-webkit-scrollbar-thumb { background: var(--border); }
+*:hover::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+input:focus, button:focus { outline: none; }
+input::placeholder { color: var(--text-muted); }
+
+.view-container {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.view-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  will-change: transform, opacity;
+}
+
+.view-slide.entering {
+  animation: slideInRight 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.view-slide.exiting {
+  animation: slideOutLeft 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.view-slide.entering-back {
+  animation: slideInLeft 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.view-slide.exiting-right {
+  animation: slideOutRight 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(60px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideOutLeft {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-60px); opacity: 0; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-60px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(60px); opacity: 0; }
+}
