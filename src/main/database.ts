@@ -80,10 +80,14 @@ export class DatabaseManager {
 
   upsertSession(session: UnifiedSession) {
     const existing = this.db
-      .prepare('SELECT updated_at FROM unified_session WHERE id = ?')
-      .get(session.id) as { updated_at: number | null } | undefined
+      .prepare('SELECT updated_at, archived FROM unified_session WHERE id = ?')
+      .get(session.id) as { updated_at: number | null; archived: number } | undefined
 
     if (existing && existing.updated_at && session.updatedAt && existing.updated_at >= session.updatedAt) {
+      return
+    }
+
+    if (existing && existing.archived) {
       return
     }
 
