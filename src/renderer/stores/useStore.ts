@@ -23,7 +23,7 @@ declare global {
       refreshIndex: () => Promise<boolean>
       getSessionMessages: (session: UnifiedSession) => Promise<ChatMessage[]>
       resumeSession: (session: UnifiedSession) => Promise<{ tabId: string; command: string }>
-      openSystemTerminal: (command: string, cwd?: string) => Promise<boolean>
+      openSystemTerminal: (command: string, cwd?: string, terminalApp?: string) => Promise<boolean>
       spawnTerminal: (cwd?: string) => Promise<string>
       ptyWrite: (tabId: string, data: string) => void
       ptyResize: (tabId: string, cols: number, rows: number) => void
@@ -55,6 +55,7 @@ interface AppState {
   terminalFullscreen: boolean
   theme: 'dark' | 'light'
   resumeAction: 'system' | 'builtin'
+  terminalApp: string
   showSettings: boolean
 
   loadSessions: () => Promise<void>
@@ -73,6 +74,7 @@ interface AppState {
   setTerminalFullscreen: (v: boolean) => void
   toggleTheme: () => void
   setResumeAction: (v: 'system' | 'builtin') => void
+  setTerminalApp: (v: string) => void
   setShowSettings: (v: boolean) => void
 }
 
@@ -97,6 +99,7 @@ export const useStore = create<AppState>((set, get) => ({
   terminalFullscreen: false,
   theme: (localStorage.getItem('theme') as 'dark' | 'light') || 'dark',
   resumeAction: (localStorage.getItem('resumeAction') as 'system' | 'builtin') || 'system',
+  terminalApp: localStorage.getItem('terminalApp') || '',
   showSettings: false,
 
   toggleTheme: () => {
@@ -233,6 +236,11 @@ export const useStore = create<AppState>((set, get) => ({
   setResumeAction: (v: 'system' | 'builtin') => {
     set({ resumeAction: v })
     localStorage.setItem('resumeAction', v)
+  },
+
+  setTerminalApp: (v: string) => {
+    set({ terminalApp: v })
+    localStorage.setItem('terminalApp', v)
   },
 
   setShowSettings: (v: boolean) => {

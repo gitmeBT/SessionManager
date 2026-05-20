@@ -165,7 +165,7 @@ export function SessionList() {
 }
 
 function SessionCard({ session, openDetail }: { session: any; openDetail: (s: any) => void }) {
-  const { resumeAction } = useStore()
+  const { resumeAction, terminalApp } = useStore()
   const tokensStr = session.tokensTotal > 0 ? formatTokens(session.tokensTotal) : ''
   const costStr = formatCost(session.cost)
   const isHot = session.tokensTotal > 50000
@@ -180,7 +180,7 @@ function SessionCard({ session, openDetail }: { session: any; openDetail: (s: an
         : `codex --resume ${s.originalId}`
 
     if (resumeAction === 'system') {
-      window.api.openSystemTerminal(cmd, s.projectPath || undefined)
+      window.api.openSystemTerminal(cmd, s.projectPath || undefined, terminalApp || undefined)
     } else {
       useStore.getState().resumeSession(s)
     }

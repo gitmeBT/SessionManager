@@ -104,7 +104,7 @@ function formatCost(n: number): string {
 }
 
 export function SessionDetail() {
-  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, resumeSession, resumeAction } = useStore()
+  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, resumeSession, resumeAction, terminalApp } = useStore()
 
   if (!detailSession) return null
 
@@ -122,7 +122,7 @@ export function SessionDetail() {
         : `codex --resume ${s.originalId}`
 
     if (resumeAction === 'system') {
-      window.api.openSystemTerminal(cmd, s.projectPath || undefined)
+      window.api.openSystemTerminal(cmd, s.projectPath || undefined, terminalApp || undefined)
     } else {
       resumeSession(s)
     }

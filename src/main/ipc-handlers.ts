@@ -106,16 +106,23 @@ export function registerIpcHandlers(
     return tabId
   })
 
-  ipcMain.handle('open-system-terminal', async (_e, command: string, cwd?: string) => {
+  ipcMain.handle('open-system-terminal', async (_e, command: string, cwd?: string, terminalApp?: string) => {
     const fs = await import('fs')
     const path = await import('path')
     const os = await import('os')
+    const { exec } = await import('child_process')
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sm-resume-'))
     const scriptPath = path.join(tmpDir, 'resume.command')
     const workDir = cwd || process.env.HOME || '/'
     fs.writeFileSync(scriptPath, `#!/bin/bash\ncd "${workDir}"\n${command}\n`)
     fs.chmodSync(scriptPath, 0o755)
-    shell.openPath(scriptPath)
+
+    if (terminalApp) {
+      exec(`open -a "${terminalApp}" "${scriptPath}"`)
+    } else {
+      shell.openPath(scriptPath)
+    }
+
     setTimeout(() => {
       try { fs.rmSync(tmpDir, { recursive: true }) } catch {}
     }, 10000)

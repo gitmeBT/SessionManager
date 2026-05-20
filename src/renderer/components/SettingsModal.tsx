@@ -1,7 +1,34 @@
 import { useStore } from '../stores/useStore'
 
+const TERMINAL_OPTIONS = [
+  { value: '', label: 'System Default' },
+  { value: 'Warp', label: 'Warp' },
+  { value: 'iTerm', label: 'iTerm2' },
+  { value: 'Terminal', label: 'Terminal.app' },
+  { value: 'Alacritty', label: 'Alacritty' },
+  { value: 'Hyper', label: 'Hyper' },
+  { value: 'kitty', label: 'kitty' },
+]
+
+const selectStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 30px 8px 12px',
+  fontSize: 12,
+  borderRadius: 6,
+  border: '1px solid var(--border)',
+  background: 'var(--bg-primary)',
+  color: 'var(--text-primary)',
+  cursor: 'pointer',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 10px center',
+  backgroundSize: 14
+}
+
 export function SettingsModal() {
-  const { showSettings, setShowSettings, resumeAction, setResumeAction } = useStore()
+  const { showSettings, setShowSettings, resumeAction, setResumeAction, terminalApp, setTerminalApp } = useStore()
 
   if (!showSettings) return null
 
@@ -22,8 +49,6 @@ export function SettingsModal() {
           border: '1px solid var(--border)',
           borderRadius: 10,
           width: 400,
-          maxHeight: '80vh',
-          overflowY: 'auto',
           boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
         }}
       >
@@ -42,41 +67,47 @@ export function SettingsModal() {
           >×</button>
         </div>
 
-        <div style={{ padding: '18px' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>
-            Resume Behavior
+        <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+              Resume Behavior
+            </div>
+            <select
+              value={resumeAction}
+              onChange={e => setResumeAction(e.target.value as 'system' | 'builtin')}
+              style={selectStyle}
+            >
+              <option value="system">System Terminal</option>
+              <option value="builtin">Built-in Terminal</option>
+            </select>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
+              {resumeAction === 'system'
+                ? 'Open session resume command in an external terminal'
+                : 'Open in the terminal panel at the bottom of this app'}
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
-            Where to open sessions when clicking Resume
-          </div>
-          <select
-            value={resumeAction}
-            onChange={e => setResumeAction(e.target.value as 'system' | 'builtin')}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: 12,
-              borderRadius: 6,
-              border: '1px solid var(--border)',
-              background: 'var(--bg-primary)',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              appearance: 'none',
-              WebkitAppearance: 'none',
-              backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23888\' stroke-width=\'2\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 10px center',
-              backgroundSize: 16
-            }}
-          >
-            <option value="system">System Default Terminal</option>
-            <option value="builtin">Built-in Terminal</option>
-          </select>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
-            {resumeAction === 'system'
-              ? 'Will open in your default terminal app (e.g. Warp, iTerm2, Terminal)'
-              : 'Will open in the terminal panel at the bottom of this app'}
-          </div>
+
+          {resumeAction === 'system' && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+                Terminal Application
+              </div>
+              <select
+                value={terminalApp}
+                onChange={e => setTerminalApp(e.target.value)}
+                style={selectStyle}
+              >
+                {TERMINAL_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
+                {terminalApp
+                  ? `Will open with ${terminalApp}`
+                  : 'Uses macOS default handler for .command files'}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
