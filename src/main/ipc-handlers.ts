@@ -6,7 +6,6 @@ import { UnifiedSession } from '../shared/types'
 import { getOpencodeMessages } from './indexer/opencode'
 import { getClaudeMessages } from './indexer/claude'
 import { getCodexMessages } from './indexer/codex'
-import { exec } from 'child_process'
 
 export function registerIpcHandlers(
   db: DatabaseManager,
@@ -108,14 +107,18 @@ export function registerIpcHandlers(
   })
 
   ipcMain.handle('open-system-terminal', async (_e, command: string, cwd?: string) => {
+    const fs = await import('fs')
+    const path = await import('path')
+    const os = await import('os')
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sm-resume-'))
+    const scriptPath = path.join(tmpDir, 'resume.command')
     const workDir = cwd || process.env.HOME || '/'
-    if (process.platform === 'darwin') {
-      exec(`osascript -e 'tell application "Terminal" to do script "cd \\"${workDir}\\" && ${command.replace(/"/g, '\\"')}"'`)
-    } else if (process.platform === 'linux') {
-      exec(`gnome-terminal -- bash -c "cd '${workDir}' && ${command}; exec bash"`)
-    } else {
-      exec(`cmd.exe /c start cmd /k "cd /d ${workDir} && ${command}"`)
-    }
+    fs.writeFileSync(scriptPath, `#!/bin/bash\ncd "${workDir}"\n${command}\n`)
+    fs.chmodSync(scriptPath, 0o755)
+    shell.openPath(scriptPath)
+    setTimeout(() => {
+      try { fs.rmSync(tmpDir, { recursive: true }) } catch {}
+    }, 10000)
     return true
   })
 
