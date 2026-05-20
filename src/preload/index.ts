@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   listProjectFiles: (projectName: string) => ipcRenderer.invoke('list-project-files', projectName),
   toggleStar: (sessionId: string) => ipcRenderer.invoke('toggle-star', sessionId),
   toggleArchive: (sessionId: string) => ipcRenderer.invoke('toggle-archive', sessionId),
+  togglePin: (sessionId: string) => ipcRenderer.invoke('toggle-pin', sessionId),
   deleteSession: (sessionId: string) => ipcRenderer.invoke('delete-session', sessionId),
   updateTags: (sessionId: string, tags: string) => ipcRenderer.invoke('update-tags', sessionId, tags),
   refreshIndex: () => ipcRenderer.invoke('refresh-index'),

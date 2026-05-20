@@ -75,13 +75,19 @@ export class DatabaseManager {
       END;
     `)
 
-    this.db.exec(`ALTER TABLE unified_session ADD COLUMN archived INTEGER DEFAULT 0`)
+    const cols = this.db.prepare("PRAGMA table_info(unified_session)").all() as Array<{ name: string }>
+    if (!cols.some(c => c.name === 'archived')) {
+      this.db.exec(`ALTER TABLE unified_session ADD COLUMN archived INTEGER DEFAULT 0`)
+    }
+    if (!cols.some(c => c.name === 'pinned')) {
+      this.db.exec(`ALTER TABLE unified_session ADD COLUMN pinned INTEGER DEFAULT 0`)
+    }
   }
 
   upsertSession(session: UnifiedSession) {
     const existing = this.db
-      .prepare('SELECT updated_at, archived FROM unified_session WHERE id = ?')
-      .get(session.id) as { updated_at: number | null; archived: number } | undefined
+      .prepare('SELECT updated_at, archived, pinned FROM unified_session WHERE id = ?')
+      .get(session.id) as { updated_at: number | null; archived: number; pinned: number } | undefined
 
     if (existing && existing.updated_at && session.updatedAt && existing.updated_at >= session.updatedAt) {
       return
@@ -91,9 +97,11 @@ export class DatabaseManager {
       return
     }
 
+    const pinnedVal = existing?.pinned || 0
+
     this.db.prepare(`
-      INSERT INTO unified_session (id, tool, original_id, project_path, project_name, title, summary, model, message_count, tokens_total, cost, git_branch, created_at, updated_at, is_active, starred, tags, indexed_at)
-      VALUES (@id, @tool, @originalId, @projectPath, @projectName, @title, @summary, @model, @messageCount, @tokensTotal, @cost, @gitBranch, @createdAt, @updatedAt, @isActive, @starred, @tags, @indexedAt)
+      INSERT INTO unified_session (id, tool, original_id, project_path, project_name, title, summary, model, message_count, tokens_total, cost, git_branch, created_at, updated_at, is_active, starred, pinned, tags, indexed_at)
+      VALUES (@id, @tool, @originalId, @projectPath, @projectName, @title, @summary, @model, @messageCount, @tokensTotal, @cost, @gitBranch, @createdAt, @updatedAt, @isActive, @starred, @pinned, @tags, @indexedAt)
       ON CONFLICT(id) DO UPDATE SET
         project_path=@projectPath, project_name=@projectName, title=@title, summary=@summary,
         model=@model, message_count=@messageCount, tokens_total=@tokensTotal, cost=@cost,
@@ -115,6 +123,7 @@ export class DatabaseManager {
       updatedAt: session.updatedAt,
       isActive: session.isActive,
       starred: session.starred,
+      pinned: pinnedVal,
       tags: session.tags,
       indexedAt: Math.floor(Date.now() / 1000)
     })
@@ -155,6 +164,7 @@ export class DatabaseManager {
       isActive: (row.is_active as number) || 0,
       starred: (row.starred as number) || 0,
       archived: (row.archived as number) || 0,
+      pinned: (row.pinned as number) || 0,
       tags: (row.tags as string) || null
     }
   }
@@ -182,6 +192,8 @@ export class DatabaseManager {
       sql += ' AND is_active = 1 AND archived = 0'
     } else if (filter.status === 'starred') {
       sql += ' AND starred = 1 AND archived = 0'
+    } else if (filter.status === 'pinned') {
+      sql += ' AND pinned = 1 AND archived = 0'
     } else if (filter.status === 'archived') {
       sql += ' AND archived = 1'
     } else {
@@ -251,21 +263,29 @@ export class DatabaseManager {
     return { byTool, byProject, total: rows.length }
   }
 
-  getStatusCounts(): { active: number; starred: number; archived: number } {
+  getStatusCounts(): { active: number; starred: number; pinned: number; archived: number } {
     const r = this.db.prepare(`
       SELECT
         SUM(CASE WHEN is_active = 1 AND archived = 0 THEN 1 ELSE 0 END) as active,
         SUM(CASE WHEN starred = 1 AND archived = 0 THEN 1 ELSE 0 END) as starred,
+        SUM(CASE WHEN pinned = 1 AND archived = 0 THEN 1 ELSE 0 END) as pinned,
         SUM(CASE WHEN archived = 1 THEN 1 ELSE 0 END) as archived
       FROM unified_session
-    `).get() as { active: number; starred: number; archived: number }
-    return { active: r.active || 0, starred: r.starred || 0, archived: r.archived || 0 }
+    `).get() as { active: number; starred: number; pinned: number; archived: number }
+    return { active: r.active || 0, starred: r.starred || 0, pinned: r.pinned || 0, archived: r.archived || 0 }
   }
 
   toggleArchive(sessionId: string): number {
     const row = this.db.prepare('SELECT archived FROM unified_session WHERE id = ?').get(sessionId) as { archived: number } | undefined
     const newVal = row ? (row.archived ? 0 : 1) : 1
     this.db.prepare('UPDATE unified_session SET archived = ? WHERE id = ?').run(newVal, sessionId)
+    return newVal
+  }
+
+  togglePin(sessionId: string): number {
+    const row = this.db.prepare('SELECT pinned FROM unified_session WHERE id = ?').get(sessionId) as { pinned: number } | undefined
+    const newVal = row ? (row.pinned ? 0 : 1) : 1
+    this.db.prepare('UPDATE unified_session SET pinned = ? WHERE id = ?').run(newVal, sessionId)
     return newVal
   }
 

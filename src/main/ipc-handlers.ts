@@ -56,6 +56,10 @@ export function registerIpcHandlers(
     return db.toggleArchive(sessionId)
   })
 
+  ipcMain.handle('toggle-pin', async (_e, sessionId) => {
+    return db.togglePin(sessionId)
+  })
+
   ipcMain.handle('delete-session', async (_e, sessionId) => {
     db.deleteSession(sessionId)
     return true

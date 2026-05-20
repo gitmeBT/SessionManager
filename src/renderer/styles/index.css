@@ -139,3 +139,12 @@ input::placeholder { color: var(--text-muted); }
   from { transform: translateX(0);    opacity: 1; }
   to   { transform: translateX(60px); opacity: 0; }
 }
+
+.ctx-menu-enter {
+  animation: ctxMenuIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ctxMenuIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}

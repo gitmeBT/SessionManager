@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore } from '../stores/useStore'
 import { ToolIcon } from './Sidebar'
 
@@ -29,6 +30,98 @@ function formatCost(n: number): string {
   return '$' + n.toFixed(2)
 }
 
+type CtxMenuState = { x: number; y: number; sessionId: string; session: any } | null
+
+function ContextMenu({ ctx, onClose, togglePin, toggleStar, toggleArchive, deleteSession }: {
+  ctx: CtxMenuState
+  onClose: () => void
+  togglePin: (id: string) => void
+  toggleStar: (id: string) => void
+  toggleArchive: (id: string) => void
+  deleteSession: (id: string) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!ctx) return
+    const close = (e: MouseEvent) => {
+      if (ref.current && ref.current.contains(e.target as Node)) return
+      e.stopImmediatePropagation()
+      e.preventDefault()
+      onClose()
+    }
+    const closeCtx = (e: MouseEvent) => {
+      if (ref.current && ref.current.contains(e.target as Node)) return
+      e.preventDefault()
+      onClose()
+    }
+    const closeKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const closeWheel = () => onClose()
+    document.addEventListener('click', close, true)
+    document.addEventListener('contextmenu', closeCtx, true)
+    document.addEventListener('keydown', closeKey)
+    window.addEventListener('wheel', closeWheel, { passive: true })
+    return () => {
+      document.removeEventListener('click', close, true)
+      document.removeEventListener('contextmenu', closeCtx, true)
+      document.removeEventListener('keydown', closeKey)
+      window.removeEventListener('wheel', closeWheel)
+    }
+  }, [ctx, onClose])
+
+  useEffect(() => {
+    if (!ctx || !ref.current) return
+    const el = ref.current
+    const raf = requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect()
+      let x = parseFloat(el.style.left), y = parseFloat(el.style.top)
+      if (x + rect.width > window.innerWidth) x = window.innerWidth - rect.width - 8
+      if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 8
+      if (x < 4) x = 4
+      if (y < 4) y = 4
+      el.style.left = x + 'px'
+      el.style.top = y + 'px'
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [ctx])
+
+  if (!ctx) return null
+
+  const s = ctx.session
+  const items = [
+    { label: s.pinned ? '📌 Unpin' : '📌 Pin', action: () => togglePin(ctx.sessionId) },
+    { label: s.starred ? '★ Unstar' : '☆ Star', action: () => toggleStar(ctx.sessionId) },
+    { label: '📦 Archive', action: () => { onClose(); useStore.getState().confirm('Archive this session?').then(ok => { if (ok) toggleArchive(ctx.sessionId) }) } },
+    { label: '🗑 Delete', action: () => { onClose(); useStore.getState().confirm('Delete this session from index?').then(ok => { if (ok) deleteSession(ctx.sessionId) }) } },
+  ]
+
+  return createPortal(
+    <div ref={ref} className="ctx-menu-enter" style={{
+      position: 'fixed', zIndex: 9999, left: ctx.x, top: ctx.y,
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
+      borderRadius: 8, padding: '4px 0', minWidth: 150,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+      transformOrigin: 'top left'
+    }}>
+      {items.map(({ label, action }) => {
+        const isDelete = label.startsWith('🗑')
+        return (
+          <div key={label} onClick={() => { action(); onClose() }}
+            style={{
+              padding: '6px 14px', fontSize: 12, cursor: 'pointer',
+              color: isDelete ? '#f87171' : 'var(--text-primary)',
+              fontFamily: 'var(--font-mono)'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+          >{label}</div>
+        )
+      })}
+    </div>,
+    document.body
+  )
+}
+
 function getTimeGroup(ts: number | null): string {
   if (!ts) return 'older'
   const now = Date.now() / 1000
@@ -42,8 +135,12 @@ function getTimeGroup(ts: number | null): string {
 export function SessionList() {
   const {
     sessions, searchQuery, setSearch,
-    sortBy, setSortBy, openDetail
+    sortBy, setSortBy, openDetail,
+    togglePin, toggleStar, toggleArchive, deleteSession
   } = useStore()
+
+  const [ctxMenu, setCtxMenu] = useState<CtxMenuState>(null)
+  const closeCtx = useCallback(() => setCtxMenu(null), [])
 
   const sortedSessions = useMemo(() => {
     let list = [...(sessions || [])]
@@ -58,6 +155,7 @@ export function SessionList() {
     }
 
     list.sort((a, b) => {
+      if (a.pinned !== b.pinned) return (b.pinned || 0) - (a.pinned || 0)
       const aVal = (a as any)[sortBy] || 0
       const bVal = (b as any)[sortBy] || 0
       return (bVal as number) - (aVal as number)
@@ -154,17 +252,18 @@ export function SessionList() {
                 <div style={{ flex: 1, height: 1, background: 'var(--border)', opacity: 0.5 }} />
               </div>
               {items.map(session => (
-                <SessionCard key={session.id} session={session} openDetail={openDetail} />
+                <SessionCard key={session.id} session={session} openDetail={openDetail} setCtxMenu={setCtxMenu} />
               ))}
             </div>
           )
         })}
       </div>
+      <ContextMenu ctx={ctxMenu} onClose={closeCtx} togglePin={togglePin} toggleStar={toggleStar} toggleArchive={toggleArchive} deleteSession={deleteSession} />
     </div>
   )
 }
 
-function SessionCard({ session, openDetail }: { session: any; openDetail: (s: any) => void }) {
+function SessionCard({ session, openDetail, setCtxMenu }: { session: any; openDetail: (s: any) => void; setCtxMenu: (v: CtxMenuState) => void }) {
   const { resumeAction, terminalApp } = useStore()
   const tokensStr = session.tokensTotal > 0 ? formatTokens(session.tokensTotal) : ''
   const costStr = formatCost(session.cost)
@@ -186,9 +285,16 @@ function SessionCard({ session, openDetail }: { session: any; openDetail: (s: an
     }
   }
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setCtxMenu({ x: e.clientX, y: e.clientY, sessionId: session.id, session })
+  }
+
   return (
     <div
       onClick={() => openDetail(session)}
+      onContextMenu={handleContextMenu}
       style={{
         padding: '12px 14px',
         margin: '3px 12px',
@@ -209,9 +315,13 @@ function SessionCard({ session, openDetail }: { session: any; openDetail: (s: an
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <div style={{
             fontSize: 12, fontWeight: 500, color: 'var(--text-primary)',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            display: 'flex', alignItems: 'center', gap: 4
           }}>
-            {session.title || 'Untitled'}
+            {session.pinned ? <span style={{ fontSize: 11, flexShrink: 0 }}>📌</span> : null}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {session.title || 'Untitled'}
+            </span>
             {isEmpty && (
               <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: 6 }}>(empty)</span>
             )}

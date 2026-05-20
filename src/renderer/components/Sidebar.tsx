@@ -168,7 +168,7 @@ export function Sidebar() {
 
       <div style={{ padding: '8px 12px' }}>
         <div style={labelStyle}>Status</div>
-        {(['all', 'active', 'starred', 'archived'] as const).map(status => (
+        {(['all', 'active', 'starred', 'pinned', 'archived'] as const).map(status => (
           <div
             key={status}
             onClick={() => setFilter('selectedStatus', status)}
@@ -191,6 +191,11 @@ export function Sidebar() {
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="var(--text-muted)" />
               </svg>
             )}
+            {status === 'pinned' && (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" fill="var(--text-muted)" />
+              </svg>
+            )}
             {status === 'archived' && (
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
                 <rect x="3" y="7" width="18" height="14" rx="2" stroke="var(--text-muted)" strokeWidth="1.5" />
@@ -198,9 +203,9 @@ export function Sidebar() {
                 <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="var(--text-muted)" strokeWidth="1.5" />
               </svg>
             )}
-            <span>{status === 'all' ? 'All' : status === 'active' ? 'Active' : status === 'starred' ? 'Starred' : 'Archived'}</span>
+            <span>{status === 'all' ? 'All' : status === 'active' ? 'Active' : status === 'starred' ? 'Starred' : status === 'pinned' ? 'Pinned' : 'Archived'}</span>
             <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-muted)' }}>
-              {status === 'all' ? counts.total : status === 'active' ? counts.active : status === 'starred' ? counts.starred : counts.archived}
+              {status === 'all' ? counts.total : status === 'active' ? counts.active : status === 'starred' ? counts.starred : status === 'pinned' ? (counts as any).pinned || 0 : counts.archived}
             </span>
           </div>
         ))}

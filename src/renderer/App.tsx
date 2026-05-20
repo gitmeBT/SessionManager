@@ -5,6 +5,7 @@ import { SessionList } from './components/SessionList'
 import { SessionDetail } from './components/SessionDetail'
 import { TerminalPanel } from './components/TerminalPanel'
 import { SettingsModal } from './components/SettingsModal'
+import { ConfirmModal } from './components/ConfirmModal'
 
 type View = 'list' | 'detail'
 
@@ -109,6 +110,7 @@ export function App() {
       </div>
       {showTerminal && <TerminalPanel />}
       <SettingsModal />
+      <ConfirmModal />
     </div>
   )
 }

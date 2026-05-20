@@ -104,11 +104,16 @@ function formatCost(n: number): string {
 }
 
 export function SessionDetail() {
-  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, toggleArchive, deleteSession, resumeSession, resumeAction, terminalApp } = useStore()
+  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, togglePin, toggleArchive, deleteSession, resumeSession, resumeAction, terminalApp } = useStore()
 
   if (!detailSession) return null
 
   const s = detailSession
+
+  const handleConfirm = async (message: string, action: () => void) => {
+    const ok = await useStore.getState().confirm(message)
+    if (ok) action()
+  }
   const toolColor = s.tool === 'opencode' ? 'var(--accent-opencode)' : s.tool === 'claude' ? 'var(--accent-claude)' : 'var(--accent-codex)'
   const toolBgColor = s.tool === 'opencode' ? 'var(--accent-opencode-bg)' : s.tool === 'claude' ? 'var(--accent-claude-bg)' : 'var(--accent-codex-bg)'
   const textCount = detailMessages.filter(m => m.type === 'text').length
@@ -162,43 +167,77 @@ export function SessionDetail() {
             </div>
           </div>
 
-          <button
-            onClick={() => toggleStar(s.id)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 17, color: s.starred ? '#fbbf24' : 'var(--text-muted)', padding: 4
-            }}
-          >
-            {s.starred ? '★' : '☆'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => toggleStar(s.id)}
+              title={s.starred ? 'Unstar' : 'Star'}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: 5, borderRadius: 4, display: 'flex', alignItems: 'center',
+                color: s.starred ? '#fbbf24' : 'var(--text-muted)'
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill={s.starred ? '#fbbf24' : 'none'} stroke="currentColor" strokeWidth="1.8">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => togglePin(s.id)}
+              title={s.pinned ? 'Unpin' : 'Pin'}
+              style={{
+                background: s.pinned ? 'var(--bg-hover)' : 'none',
+                border: s.pinned ? '1px solid var(--border)' : 'none',
+                cursor: 'pointer', padding: s.pinned ? 4 : 5, borderRadius: 4,
+                display: 'flex', alignItems: 'center',
+                color: s.pinned ? 'var(--accent)' : 'var(--text-muted)'
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => handleConfirm('Archive this session? It will be hidden from the main list.', () => toggleArchive(s.id))}
+              title="Archive"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: 5, borderRadius: 4, display: 'flex', alignItems: 'center',
+                color: 'var(--text-muted)'
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="3" y="7" width="18" height="14" rx="2" />
+                <path d="M3 11h18" />
+                <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+            </button>
+            <button
+              onClick={() => handleConfirm('Permanently delete this session from the index?', () => deleteSession(s.id))}
+              title="Delete"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: 5, borderRadius: 4, display: 'flex', alignItems: 'center',
+                color: '#f87171'
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M3 6h18" />
+                <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                <path d="M10 11v6" /><path d="M14 11v6" />
+              </svg>
+            </button>
+          </div>
+
           <button
             onClick={handleResume}
             style={{
               background: toolColor, border: 'none', cursor: 'pointer',
-              fontSize: 12, color: '#fff', padding: '6px 14px', borderRadius: 6, fontWeight: 500
+              fontSize: 12, color: '#fff', padding: '6px 14px', borderRadius: 6, fontWeight: 500,
+              marginLeft: 6
             }}
           >
             ▶ Resume
-          </button>
-          <button
-            onClick={() => { if (confirm('Archive this session? It will be hidden from the main list.')) toggleArchive(s.id) }}
-            title="Archive"
-            style={{
-              background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
-              fontSize: 11, color: 'var(--text-muted)', padding: '5px 10px', borderRadius: 5
-            }}
-          >
-            Archive
-          </button>
-          <button
-            onClick={() => { if (confirm('Permanently delete this session from the index?')) deleteSession(s.id) }}
-            title="Delete"
-            style={{
-              background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
-              fontSize: 11, color: '#f87171', padding: '5px 10px', borderRadius: 5
-            }}
-          >
-            Delete
           </button>
         </div>
 

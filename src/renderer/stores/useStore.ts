@@ -16,10 +16,11 @@ declare global {
       getMessagePreviews: (sessionId: string) => Promise<unknown[]>
       getProjectNames: () => Promise<string[]>
       getSessionCount: () => Promise<number>
-      getCounts: () => Promise<{ byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; archived: number }>
+      getCounts: () => Promise<{ byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; pinned: number; archived: number }>
       listProjectFiles: (projectName: string) => Promise<Array<{ name: string; isDir: boolean }>>
       toggleStar: (sessionId: string) => Promise<number>
       toggleArchive: (sessionId: string) => Promise<number>
+      togglePin: (sessionId: string) => Promise<number>
       deleteSession: (sessionId: string) => Promise<boolean>
       updateTags: (sessionId: string, tags: string) => Promise<void>
       refreshIndex: () => Promise<boolean>
@@ -46,7 +47,7 @@ interface AppState {
   detailSession: UnifiedSession | null
   detailMessages: ChatMessage[]
   detailLoading: boolean
-  counts: { byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; archived: number }
+  counts: { byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; pinned: number; archived: number }
   loading: boolean
   sortBy: string
   terminalTabs: TerminalTab[]
@@ -59,6 +60,7 @@ interface AppState {
   resumeAction: 'system' | 'builtin'
   terminalApp: string
   showSettings: boolean
+  confirmDialog: { message: string; onConfirm: () => void } | null
 
   loadSessions: () => Promise<void>
   loadProjectNames: () => Promise<void>
@@ -69,6 +71,7 @@ interface AppState {
   setSortBy: (sort: string) => void
   toggleStar: (sessionId: string) => Promise<void>
   toggleArchive: (sessionId: string) => Promise<void>
+  togglePin: (sessionId: string) => Promise<void>
   deleteSession: (sessionId: string) => Promise<void>
   resumeSession: (session: UnifiedSession) => Promise<void>
   spawnTerminal: () => Promise<void>
@@ -79,7 +82,8 @@ interface AppState {
   toggleTheme: () => void
   setResumeAction: (v: 'system' | 'builtin') => void
   setTerminalApp: (v: string) => void
-  setShowSettings: (v: boolean) => void
+  setConfirmDialog: (v: { message: string; onConfirm: () => void } | null) => void
+  confirm: (message: string) => Promise<boolean>
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -92,7 +96,7 @@ export const useStore = create<AppState>((set, get) => ({
   detailSession: null,
   detailMessages: [],
   detailLoading: false,
-  counts: { byTool: {}, byProject: {}, total: 0, active: 0, starred: 0, archived: 0 },
+  counts: { byTool: {}, byProject: {}, total: 0, active: 0, starred: 0, pinned: 0, archived: 0 },
   loading: false,
   sortBy: 'updatedAt',
   terminalTabs: [],
@@ -105,6 +109,7 @@ export const useStore = create<AppState>((set, get) => ({
   resumeAction: (localStorage.getItem('resumeAction') as 'system' | 'builtin') || 'system',
   terminalApp: localStorage.getItem('terminalApp') || '',
   showSettings: false,
+  confirmDialog: null,
 
   toggleTheme: () => {
     const next = get().theme === 'dark' ? 'light' : 'dark'
@@ -128,7 +133,7 @@ export const useStore = create<AppState>((set, get) => ({
   loadProjectNames: async () => {
     const names = await window.api.getProjectNames()
     const counts = await window.api.getCounts()
-    set({ projectNames: names, counts: { ...counts, archived: counts.archived || 0 } })
+    set({ projectNames: names, counts: { ...counts, pinned: counts.pinned || 0, archived: counts.archived || 0 } })
   },
 
   setFilter: async (key: string, value: string) => {
@@ -179,6 +184,21 @@ export const useStore = create<AppState>((set, get) => ({
     if (get().detailSession?.id === sessionId) {
       set({ detailSession: null, detailMessages: [] })
     }
+  },
+
+  togglePin: async (sessionId: string) => {
+    await window.api.togglePin(sessionId)
+    const sessions = get().sessions.map(s =>
+      s.id === sessionId ? { ...s, pinned: s.pinned ? 0 : 1 } : s
+    )
+    const detailSession = get().detailSession
+    set({
+      sessions,
+      detailSession: detailSession?.id === sessionId
+        ? { ...detailSession, pinned: detailSession.pinned ? 0 : 1 }
+        : detailSession
+    })
+    await get().loadProjectNames()
   },
 
   deleteSession: async (sessionId: string) => {
@@ -267,5 +287,20 @@ export const useStore = create<AppState>((set, get) => ({
 
   setShowSettings: (v: boolean) => {
     set({ showSettings: v })
+  },
+
+  setConfirmDialog: (v) => {
+    set({ confirmDialog: v })
+  },
+
+  confirm: (message: string) => {
+    return new Promise<boolean>((resolve) => {
+      set({
+        confirmDialog: {
+          message,
+          onConfirm: () => { set({ confirmDialog: null }); resolve(true) }
+        }
+      })
+    })
   }
 }))
