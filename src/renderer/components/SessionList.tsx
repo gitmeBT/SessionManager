@@ -165,11 +165,26 @@ export function SessionList() {
 }
 
 function SessionCard({ session, openDetail }: { session: any; openDetail: (s: any) => void }) {
+  const { resumeAction } = useStore()
   const tokensStr = session.tokensTotal > 0 ? formatTokens(session.tokensTotal) : ''
   const costStr = formatCost(session.cost)
   const isHot = session.tokensTotal > 50000
   const isEmpty = session.messageCount === 0
   const dimStyle: React.CSSProperties = isEmpty ? { opacity: 0.45 } : {}
+
+  const handleResume = (s: any) => {
+    const cmd = s.tool === 'opencode'
+      ? `opencode --session ${s.originalId} "${s.projectPath || ''}"`
+      : s.tool === 'claude'
+        ? `claude --resume ${s.originalId}`
+        : `codex --resume ${s.originalId}`
+
+    if (resumeAction === 'system') {
+      window.api.openSystemTerminal(cmd, s.projectPath || undefined)
+    } else {
+      useStore.getState().resumeSession(s)
+    }
+  }
 
   return (
     <div
@@ -230,7 +245,7 @@ function SessionCard({ session, openDetail }: { session: any; openDetail: (s: an
         <button
           onClick={e => {
             e.stopPropagation()
-            useStore.getState().resumeSession(session)
+            handleResume(session)
           }}
           style={{
             padding: '4px 10px', fontSize: 10, borderRadius: 5,

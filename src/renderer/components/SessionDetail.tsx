@@ -104,7 +104,7 @@ function formatCost(n: number): string {
 }
 
 export function SessionDetail() {
-  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, resumeSession } = useStore()
+  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, resumeSession, resumeAction } = useStore()
 
   if (!detailSession) return null
 
@@ -113,6 +113,20 @@ export function SessionDetail() {
   const toolBgColor = s.tool === 'opencode' ? 'var(--accent-opencode-bg)' : s.tool === 'claude' ? 'var(--accent-claude-bg)' : 'var(--accent-codex-bg)'
   const textCount = detailMessages.filter(m => m.type === 'text').length
   const toolCount = detailMessages.filter(m => m.type === 'tool').length
+
+  const handleResume = () => {
+    const cmd = s.tool === 'opencode'
+      ? `opencode --session ${s.originalId} "${s.projectPath || ''}"`
+      : s.tool === 'claude'
+        ? `claude --resume ${s.originalId}`
+        : `codex --resume ${s.originalId}`
+
+    if (resumeAction === 'system') {
+      window.api.openSystemTerminal(cmd, s.projectPath || undefined)
+    } else {
+      resumeSession(s)
+    }
+  }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-primary)' }}>
@@ -158,7 +172,7 @@ export function SessionDetail() {
             {s.starred ? '★' : '☆'}
           </button>
           <button
-            onClick={() => resumeSession(s)}
+            onClick={handleResume}
             style={{
               background: toolColor, border: 'none', cursor: 'pointer',
               fontSize: 12, color: '#fff', padding: '6px 14px', borderRadius: 6, fontWeight: 500

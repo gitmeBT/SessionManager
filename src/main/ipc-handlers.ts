@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, shell } from 'electron'
 import { DatabaseManager } from './database'
 import { Indexer } from './indexer'
 import { PtyManager } from './pty-manager'
@@ -6,6 +6,7 @@ import { UnifiedSession } from '../shared/types'
 import { getOpencodeMessages } from './indexer/opencode'
 import { getClaudeMessages } from './indexer/claude'
 import { getCodexMessages } from './indexer/codex'
+import { exec } from 'child_process'
 
 export function registerIpcHandlers(
   db: DatabaseManager,
@@ -104,6 +105,18 @@ export function registerIpcHandlers(
     const tabId = `pty-${Date.now()}`
     ptyManager.spawn(tabId, cwd || process.env.HOME || '/')
     return tabId
+  })
+
+  ipcMain.handle('open-system-terminal', async (_e, command: string, cwd?: string) => {
+    const workDir = cwd || process.env.HOME || '/'
+    if (process.platform === 'darwin') {
+      exec(`osascript -e 'tell application "Terminal" to do script "cd \\"${workDir}\\" && ${command.replace(/"/g, '\\"')}"'`)
+    } else if (process.platform === 'linux') {
+      exec(`gnome-terminal -- bash -c "cd '${workDir}' && ${command}; exec bash"`)
+    } else {
+      exec(`cmd.exe /c start cmd /k "cd /d ${workDir} && ${command}"`)
+    }
+    return true
   })
 
   ipcMain.on('pty-write', (_e, tabId: string, data: string) => {

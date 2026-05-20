@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   getSessionMessages: (session: unknown) => ipcRenderer.invoke('get-session-messages', session),
 
   resumeSession: (session: unknown) => ipcRenderer.invoke('resume-session', session),
+  openSystemTerminal: (command: string, cwd?: string) => ipcRenderer.invoke('open-system-terminal', command, cwd),
   spawnTerminal: (cwd?: string) => ipcRenderer.invoke('spawn-terminal', cwd),
 
   ptyWrite: (tabId: string, data: string) => ipcRenderer.send('pty-write', tabId, data),
