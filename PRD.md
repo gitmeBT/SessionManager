@@ -33,8 +33,8 @@
 | 工具 | 数据源 | 关键字段 |
 |---|---|---|
 | opencode | `~/.local/share/opencode/opencode.db` (SQLite) | id, title, directory, model, cost, tokens, time_created/updated |
-| Claude Code | `~/.claude/projects/{project}/sessions-index.json` | sessionId, firstPrompt, summary, projectPath, gitBranch, created, modified, messageCount |
-| Codex | `~/.codex/state_5.sqlite` (SQLite) | id, title, cwd, model, tokens_used, first_user_message, created_at, updated_at |
+| Claude Code | `~/.claude/projects/{encoded-path}/{uuid}.jsonl` | sessionId (filename), firstPrompt, projectPath (dir name), created/modified |
+| Codex | `~/.codex/state_5.sqlite` (SQLite) | id, title, cwd, model, tokens_used, archived, archived_at, created_at, updated_at |
 
 **统一数据模型：**
 
@@ -45,17 +45,19 @@ CREATE TABLE unified_session (
   original_id TEXT NOT NULL,
   project_path TEXT,
   project_name TEXT,             -- 路径最后一段
-  title TEXT,                    -- firstPrompt / first_user_message / title
+  title TEXT,
   summary TEXT,
   model TEXT,
   message_count INTEGER DEFAULT 0,
   tokens_total INTEGER DEFAULT 0,
   cost REAL DEFAULT 0,
   git_branch TEXT,
-  created_at INTEGER,
-  updated_at INTEGER,
+  created_at INTEGER,            -- Unix seconds
+  updated_at INTEGER,            -- Unix seconds
   is_active INTEGER DEFAULT 0,
   starred INTEGER DEFAULT 0,
+  archived INTEGER DEFAULT 0,    -- 归档标记（索引层）
+  pinned INTEGER DEFAULT 0,      -- 置顶标记（索引层）
   tags TEXT,                     -- JSON array
   indexed_at INTEGER
 );
@@ -64,14 +66,15 @@ CREATE TABLE session_message_preview (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   session_id TEXT NOT NULL REFERENCES unified_session(id),
   role TEXT NOT NULL,            -- user / assistant
-  content_preview TEXT,          -- 前 300 字
+  content_preview TEXT,
   seq INTEGER,
   timestamp INTEGER
 );
 
-CREATE VIRTUAL TABLE session_search USING fts5(
-  id, title, summary, project_name, content,
-  content=session_search_content
+CREATE VIRTUAL TABLE session_fts USING fts5(
+  id, title, summary, project_name,
+  content=unified_session,
+  content_rowid=rowid
 );
 ```
 
@@ -88,65 +91,86 @@ CREATE VIRTUAL TABLE session_search USING fts5(
 ┌──────────┬───────────────────────────────────┐
 │ 侧边栏    │  主区域                            │
 │          │                                   │
-│ [搜索框]  │  Session 列表                     │
-│          │  ┌─────────────────────────────┐  │
-│ 项目      │  │ 🟢 opencode · 2分钟前       │  │
-│ · 全部    │  │ 修复登录 webhook handler     │  │
-│ · OCoder │  │ OCoder · main · 12条消息     │  │
-│ · OMSys  │  │ [▶ 恢复] [⭐]               │  │
-│ · ...    │  ├─────────────────────────────┤  │
-│          │  │ ⚪ claude · 昨天             │  │
-│ 工具      │  │ 添加日志功能                 │  │
-│ · 全部    │  │ OCoder · dev · 8条消息       │  │
-│ · open   │  │ [▶ 恢复] [⭐]               │  │
-│ · claude │  └─────────────────────────────┘  │
-│ · codex  │                                   │
-│          │                                   │
-│ 状态      │                                   │
-│ · 活跃    │                                   │
-│ · 收藏    │                                   │
+│ Tool      │  [搜索框]  [Updated|Created|...]   │
+│ · All     │                                   │
+│ · OpenCode│  Today ─────────────────── 5      │
+│ · Claude  │  ┌─────────────────────────────┐  │
+│ · Codex   │  │ 📌 修复登录 webhook handler  │  │
+│          │  │ OCoder · 12条消息 · 50k tok  │  │
+│ Project   │  │                   [Resume ▶] │  │
+│ · All     │  ├─────────────────────────────┤  │
+│ · OCoder  │  │ 🟢 添加日志功能              │  │
+│ · ...    │  │ ...                          │  │
+│          │  └─────────────────────────────┘  │
+│ Status    │                                   │
+│ · All     │  Past Week ──────────────── 12    │
+│ · Active  │  ...                              │
+│ · Starred │                                   │
+│ · Pinned  │                                   │
+│ · Archived│                                   │
 └──────────┴───────────────────────────────────┘
 ```
 
 **功能点：**
-- 默认按 updated_at 降序排列
-- 侧边栏按项目/工具/状态筛选（可叠加）
-- 顶部搜索框：全文搜索 title + summary + firstPrompt
-- 每个 session 卡片显示：工具图标、时间（相对时间+绝对时间）、标题、项目名、git branch、消息数、token/cost
-- 活跃 session（最近 1 小时内有更新）带绿色标记
-- 点击卡片展开/折叠消息预览（最近 5 条）
+- 时间分组：Today / Past Week / Past Month / Older，带 sticky header
+- Pinned session 置顶显示，带 📌 标记
+- 侧边栏按 Tool / Project / Status 筛选（可叠加）
+- 顶部搜索框：全文搜索 title + summary + project_name（FTS5）
+- 客户端排序：Updated / Created / Rounds / Tokens / Cost
+- 每个 session 卡片：工具图标、标题、项目名、时间、消息数、token/cost
+- 右键上下文菜单：Pin/Unpin、Star/Unstar、Archive、Delete（自定义确认弹窗）
+- 点击卡片进入 session 详情页（带滑入动画）
 
-### F3: 内嵌终端 (xterm.js)
+### F3: Session 详情页
+
+**功能点：**
+- 完整对话浏览：User/AI 消息气泡 + Tool Call 标记
+- 消息超长自动截断，"Show all" 展开按钮
+- 标题栏：← Back、工具图标、标题、Star/Pin/Archive/Delete（SVG 图标按钮）、▶ Resume
+- 元数据 pills：项目名、模型、git branch、消息数、token、cost
+- 滑入/滑出动画（280ms cubic-bezier）
+
+### F4: 内嵌终端 (xterm.js)
 
 **核心功能：**
-- 点击 session 的 "▶ 恢复" 按钮，在界面下方（或新 Tab）打开终端
-- 自动执行：`cd {project_path} && {tool} resume {session_id}`
-- 支持多 Tab，可同时运行多个 agent
-- 完整的终端体验：256 色、快捷键、复制粘贴
+- 支持内置终端（xterm.js + node-pty）和系统终端两种 resume 方式
+- 系统终端：生成 temp .command 文件，支持指定终端应用（Warp/iTerm2/Terminal.app 等）
+- 内置终端：多 Tab，xterm.js 渲染，主题跟随 dark/light 切换
+- 全屏模式（Esc 退出）
 
 **Resume 命令映射：**
 
 | 工具 | 命令 |
 |---|---|
-| opencode | `opencode resume {original_id}` |
+| opencode | `opencode --session {original_id} "{project_path}"` |
 | Claude Code | `claude --resume {original_id}` |
 | Codex | `codex --resume {original_id}` |
 
-### F4: 收藏与标签
+### F5: Session 管理
 
-- 点击 ⭐ 收藏 session
-- 自定义标签（输入框 + tag pills）
-- 筛选器支持按标签过滤
+- **Pin/Unpin**：置顶 session，排序始终在最前（通过右键菜单或详情页按钮）
+- **Star/Unstar**：收藏 session
+- **Archive**：从主列表隐藏（标记 `archived=1`，可在 Archived 筛选器中查看）
+- **Delete**：从索引 DB 中删除（原始数据不受影响）
+- **自定义确认弹窗**：Archive/Delete 操作使用应用内弹窗，不使用系统原生 confirm()
+
+### F6: 设置
+
+- Dark/Light 主题切换
+- Resume 行为：System Terminal / Built-in
+- 终端应用选择：Warp / iTerm2 / Terminal.app / Alacritty / Hyper / kitty
+- 设置持久化在 localStorage
 
 ---
 
 ## V2 功能（后续迭代）
 
 - 半自动任务归组（AI 建议合并相关 session，用户确认）
-- Session 详情页（完整对话浏览）
 - Token/Cost 统计仪表盘
 - `cd` 项目目录时自动弹出相关 session（需集成到 shell）
 - 每日工作报告生成
+- 自定义标签（输入框 + tag pills）与标签筛选
+- 批量操作：多选 session 批量归档/删除
 
 ---
 
@@ -162,12 +186,12 @@ Electron App
 │
 ├── Renderer Process (React + TypeScript + Vite)
 │   ├── UI 组件
-│   │   ├── Sidebar — 项目/工具/状态筛选
-│   │   ├── SessionList — session 卡片列表
-│   │   ├── SearchBar — 全文搜索
-│   │   ├── SessionDetail — 消息预览
-│   │   ├── TerminalTabs — xterm.js 多终端
-│   │   └── TagManager — 标签管理
+│   │   ├── Sidebar — Tool/Project/Status 筛选 + 计数
+│   │   ├── SessionList — 搜索、排序、时间分组、右键菜单
+│   │   ├── SessionDetail — 完整对话浏览、操作按钮
+│   │   ├── TerminalPanel — xterm.js 多 Tab 终端
+│   │   ├── SettingsModal — 主题、Resume 行为、终端应用
+│   │   └── ConfirmModal — 自定义确认弹窗
 │   └── State (Zustand)
 │
 └── Preload (contextBridge)
@@ -213,18 +237,26 @@ SessionManager/
 │   │   │   ├── opencode.ts      # opencode 数据源
 │   │   │   ├── claude.ts        # Claude Code 数据源
 │   │   │   └── codex.ts         # Codex 数据源
-│   │   ├── database.ts          # SQLite 操作
+│   │   ├── database.ts          # SQLite 操作 + 统一数据模型
 │   │   ├── pty-manager.ts       # 终端进程管理
 │   │   └── ipc-handlers.ts      # IPC 接口
 │   ├── preload/
 │   │   └── index.ts             # contextBridge
-│   └── renderer/                # React 前端
-│       ├── index.html
-│       ├── main.tsx
-│       ├── App.tsx
-│       ├── components/
-│       ├── stores/
-│       └── styles/
+│   ├── renderer/                # React 前端
+│   │   ├── App.tsx              # 根布局 + 视图切换动画
+│   │   ├── components/
+│   │   │   ├── Sidebar.tsx      # 侧边栏筛选
+│   │   │   ├── SessionList.tsx  # 列表 + 右键菜单
+│   │   │   ├── SessionDetail.tsx # 详情页
+│   │   │   ├── TerminalPanel.tsx # 终端面板
+│   │   │   ├── SettingsModal.tsx # 设置弹窗
+│   │   │   └── ConfirmModal.tsx  # 确认弹窗
+│   │   ├── stores/
+│   │   │   └── useStore.ts      # Zustand 全局状态
+│   │   └── styles/
+│   │       └── index.css        # CSS 变量 + 动画
+│   └── shared/
+│       └── types.ts             # 共享类型定义
 └── resources/                   # Electron 打包资源
     └── icon.png
 ```
@@ -238,3 +270,15 @@ SessionManager/
 - 搜索响应 < 100ms
 - 内存占用 < 200MB（不含终端进程）
 - 仅支持 macOS（V1）
+- 所有管理操作（Archive/Delete/Pin/Star）只影响索引 DB，不修改原始数据
+- 重新索引时保留 archived/pinned 状态
+
+## 各工具原生能力备注
+
+| 功能 | opencode | Claude Code | Codex |
+|---|---|---|---|
+| 删除 | ✅ `opencode session delete <id>` | ❌ 手动删文件 | ❌ |
+| 归档 | DB 有 `time_archived` 字段（TUI 未暴露） | ❌ | DB 有 `archived`/`archived_at` 字段 |
+| Pin | ❌ | ❌ | ❌ |
+| Star | ❌ | ❌ | ❌ |
+| 列表 | ✅ `opencode session list` | ✅ `claude conversation list` | ❌ |
