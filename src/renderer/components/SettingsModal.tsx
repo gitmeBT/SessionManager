@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { useStore } from '../stores/useStore'
 
 const TERMINAL_OPTIONS = [
@@ -10,21 +11,85 @@ const TERMINAL_OPTIONS = [
   { value: 'kitty', label: 'kitty' },
 ]
 
-const selectStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '8px 30px 8px 12px',
-  fontSize: 12,
-  borderRadius: 6,
-  border: '1px solid var(--border)',
-  background: 'var(--bg-primary)',
-  color: 'var(--text-primary)',
-  cursor: 'pointer',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 10px center',
-  backgroundSize: 14
+const RESUME_OPTIONS = [
+  { value: 'system', label: 'System Terminal' },
+  { value: 'builtin', label: 'Built-in Terminal' },
+]
+
+function CustomSelect({ value, onChange, options }: {
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const current = options.find(o => o.value === value) || options[0]
+
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          padding: '8px 32px 8px 12px',
+          fontSize: 12,
+          borderRadius: 6,
+          border: '1px solid var(--border)',
+          background: open ? 'var(--bg-hover)' : 'var(--bg-primary)',
+          color: 'var(--text-primary)',
+          cursor: 'pointer',
+          position: 'relative',
+          userSelect: 'none'
+        }}
+      >
+        {current.label}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{
+          position: 'absolute', right: 10, top: '50%', transform: `translateY(-50%) rotate(${open ? 180 : 0}deg)`,
+          transition: 'transform 0.15s'
+        }}>
+          <polyline points="6 9 12 15 18 9" stroke="var(--text-muted)" strokeWidth="2" fill="none" />
+        </svg>
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          marginTop: 4, borderRadius: 6,
+          border: '1px solid var(--border)',
+          background: 'var(--bg-secondary)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          zIndex: 10, overflow: 'hidden'
+        }}>
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+              style={{
+                padding: '7px 12px',
+                fontSize: 12,
+                cursor: 'pointer',
+                background: opt.value === value ? 'var(--bg-hover)' : 'transparent',
+                color: opt.value === value ? 'var(--accent)' : 'var(--text-primary)',
+                fontWeight: opt.value === value ? 500 : 400,
+                transition: 'background 0.1s'
+              }}
+              onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.background = 'var(--bg-hover)' }}
+              onMouseLeave={e => { if (opt.value !== value) e.currentTarget.style.background = 'transparent' }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function SettingsModal() {
@@ -72,14 +137,11 @@ export function SettingsModal() {
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
               Resume Behavior
             </div>
-            <select
+            <CustomSelect
               value={resumeAction}
-              onChange={e => setResumeAction(e.target.value as 'system' | 'builtin')}
-              style={selectStyle}
-            >
-              <option value="system">System Terminal</option>
-              <option value="builtin">Built-in Terminal</option>
-            </select>
+              onChange={v => setResumeAction(v as 'system' | 'builtin')}
+              options={RESUME_OPTIONS}
+            />
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
               {resumeAction === 'system'
                 ? 'Open session resume command in an external terminal'
@@ -92,15 +154,11 @@ export function SettingsModal() {
               <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
                 Terminal Application
               </div>
-              <select
+              <CustomSelect
                 value={terminalApp}
-                onChange={e => setTerminalApp(e.target.value)}
-                style={selectStyle}
-              >
-                {TERMINAL_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+                onChange={setTerminalApp}
+                options={TERMINAL_OPTIONS}
+              />
               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
                 {terminalApp
                   ? `Will open with ${terminalApp}`
