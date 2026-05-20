@@ -104,7 +104,7 @@ function formatCost(n: number): string {
 }
 
 export function SessionDetail() {
-  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, resumeSession, resumeAction, terminalApp } = useStore()
+  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, toggleArchive, deleteSession, resumeSession, resumeAction, terminalApp } = useStore()
 
   if (!detailSession) return null
 
@@ -179,6 +179,26 @@ export function SessionDetail() {
             }}
           >
             ▶ Resume
+          </button>
+          <button
+            onClick={() => { if (confirm('Archive this session? It will be hidden from the main list.')) toggleArchive(s.id) }}
+            title="Archive"
+            style={{
+              background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
+              fontSize: 11, color: 'var(--text-muted)', padding: '5px 10px', borderRadius: 5
+            }}
+          >
+            Archive
+          </button>
+          <button
+            onClick={() => { if (confirm('Permanently delete this session from the index?')) deleteSession(s.id) }}
+            title="Delete"
+            style={{
+              background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
+              fontSize: 11, color: '#f87171', padding: '5px 10px', borderRadius: 5
+            }}
+          >
+            Delete
           </button>
         </div>
 

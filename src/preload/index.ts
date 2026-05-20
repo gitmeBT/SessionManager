@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('api', {
   getCounts: () => ipcRenderer.invoke('get-counts'),
   listProjectFiles: (projectName: string) => ipcRenderer.invoke('list-project-files', projectName),
   toggleStar: (sessionId: string) => ipcRenderer.invoke('toggle-star', sessionId),
+  toggleArchive: (sessionId: string) => ipcRenderer.invoke('toggle-archive', sessionId),
+  deleteSession: (sessionId: string) => ipcRenderer.invoke('delete-session', sessionId),
   updateTags: (sessionId: string, tags: string) => ipcRenderer.invoke('update-tags', sessionId, tags),
   refreshIndex: () => ipcRenderer.invoke('refresh-index'),
   getSessionMessages: (session: unknown) => ipcRenderer.invoke('get-session-messages', session),

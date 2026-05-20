@@ -59,7 +59,8 @@ export async function scanCodex(): Promise<UnifiedSession[]> {
         updatedAt: row.updated_at,
         isActive: 0,
         starred: 0,
-        tags: null
+        tags: null,
+        archived: 0
       })
     }
   } finally {

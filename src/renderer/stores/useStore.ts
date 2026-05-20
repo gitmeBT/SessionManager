@@ -16,9 +16,11 @@ declare global {
       getMessagePreviews: (sessionId: string) => Promise<unknown[]>
       getProjectNames: () => Promise<string[]>
       getSessionCount: () => Promise<number>
-      getCounts: () => Promise<{ byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number }>
+      getCounts: () => Promise<{ byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; archived: number }>
       listProjectFiles: (projectName: string) => Promise<Array<{ name: string; isDir: boolean }>>
       toggleStar: (sessionId: string) => Promise<number>
+      toggleArchive: (sessionId: string) => Promise<number>
+      deleteSession: (sessionId: string) => Promise<boolean>
       updateTags: (sessionId: string, tags: string) => Promise<void>
       refreshIndex: () => Promise<boolean>
       getSessionMessages: (session: UnifiedSession) => Promise<ChatMessage[]>
@@ -44,7 +46,7 @@ interface AppState {
   detailSession: UnifiedSession | null
   detailMessages: ChatMessage[]
   detailLoading: boolean
-  counts: { byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number }
+  counts: { byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; archived: number }
   loading: boolean
   sortBy: string
   terminalTabs: TerminalTab[]
@@ -66,6 +68,8 @@ interface AppState {
   closeDetail: () => void
   setSortBy: (sort: string) => void
   toggleStar: (sessionId: string) => Promise<void>
+  toggleArchive: (sessionId: string) => Promise<void>
+  deleteSession: (sessionId: string) => Promise<void>
   resumeSession: (session: UnifiedSession) => Promise<void>
   spawnTerminal: () => Promise<void>
   closeTab: (tabId: string) => Promise<void>
@@ -88,7 +92,7 @@ export const useStore = create<AppState>((set, get) => ({
   detailSession: null,
   detailMessages: [],
   detailLoading: false,
-  counts: { byTool: {}, byProject: {}, total: 0, active: 0, starred: 0 },
+  counts: { byTool: {}, byProject: {}, total: 0, active: 0, starred: 0, archived: 0 },
   loading: false,
   sortBy: 'updatedAt',
   terminalTabs: [],
@@ -124,7 +128,7 @@ export const useStore = create<AppState>((set, get) => ({
   loadProjectNames: async () => {
     const names = await window.api.getProjectNames()
     const counts = await window.api.getCounts()
-    set({ projectNames: names, counts })
+    set({ projectNames: names, counts: { ...counts, archived: counts.archived || 0 } })
   },
 
   setFilter: async (key: string, value: string) => {
@@ -166,6 +170,24 @@ export const useStore = create<AppState>((set, get) => ({
         ? { ...detailSession, starred: detailSession.starred ? 0 : 1 }
         : detailSession
     })
+  },
+
+  toggleArchive: async (sessionId: string) => {
+    await window.api.toggleArchive(sessionId)
+    await get().loadSessions()
+    await get().loadProjectNames()
+    if (get().detailSession?.id === sessionId) {
+      set({ detailSession: null, detailMessages: [] })
+    }
+  },
+
+  deleteSession: async (sessionId: string) => {
+    await window.api.deleteSession(sessionId)
+    await get().loadSessions()
+    await get().loadProjectNames()
+    if (get().detailSession?.id === sessionId) {
+      set({ detailSession: null, detailMessages: [] })
+    }
   },
 
   resumeSession: async (session: UnifiedSession) => {

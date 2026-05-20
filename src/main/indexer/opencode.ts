@@ -66,7 +66,8 @@ export async function scanOpencode(): Promise<UnifiedSession[]> {
         updatedAt: row.time_updated ? Math.floor(row.time_updated / 1000) : null,
         isActive: 0,
         starred: 0,
-        tags: null
+        tags: null,
+        archived: 0
       })
     }
   } finally {

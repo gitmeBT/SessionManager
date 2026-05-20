@@ -15,6 +15,7 @@ export interface UnifiedSession {
   updatedAt: number | null
   isActive: number
   starred: number
+  archived: number
   tags: string | null
 }
 
@@ -37,4 +38,4 @@ export interface TerminalTab {
 }
 
 export type ToolFilter = 'all' | 'opencode' | 'claude' | 'codex'
-export type StatusFilter = 'all' | 'active' | 'starred'
+export type StatusFilter = 'all' | 'active' | 'starred' | 'archived'

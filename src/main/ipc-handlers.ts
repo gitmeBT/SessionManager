@@ -52,6 +52,15 @@ export function registerIpcHandlers(
     return db.toggleStar(sessionId)
   })
 
+  ipcMain.handle('toggle-archive', async (_e, sessionId) => {
+    return db.toggleArchive(sessionId)
+  })
+
+  ipcMain.handle('delete-session', async (_e, sessionId) => {
+    db.deleteSession(sessionId)
+    return true
+  })
+
   ipcMain.handle('update-tags', async (_e, sessionId, tags) => {
     db.updateTags(sessionId, tags)
   })

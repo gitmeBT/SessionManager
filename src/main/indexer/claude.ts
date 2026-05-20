@@ -129,7 +129,8 @@ export async function scanClaude(): Promise<UnifiedSession[]> {
         updatedAt: fileTime,
         isActive: 0,
         starred: 0,
-        tags: null
+        tags: null,
+        archived: 0
       })
     }
   }

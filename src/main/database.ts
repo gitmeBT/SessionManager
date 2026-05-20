@@ -74,6 +74,8 @@ export class DatabaseManager {
         VALUES (new.rowid, new.id, new.title, new.summary, new.project_name);
       END;
     `)
+
+    this.db.exec(`ALTER TABLE unified_session ADD COLUMN archived INTEGER DEFAULT 0`)
   }
 
   upsertSession(session: UnifiedSession) {
@@ -148,6 +150,7 @@ export class DatabaseManager {
       updatedAt: (row.updated_at as number) || null,
       isActive: (row.is_active as number) || 0,
       starred: (row.starred as number) || 0,
+      archived: (row.archived as number) || 0,
       tags: (row.tags as string) || null
     }
   }
@@ -172,9 +175,13 @@ export class DatabaseManager {
       params.push(filter.projectName)
     }
     if (filter.status === 'active') {
-      sql += ' AND is_active = 1'
+      sql += ' AND is_active = 1 AND archived = 0'
     } else if (filter.status === 'starred') {
-      sql += ' AND starred = 1'
+      sql += ' AND starred = 1 AND archived = 0'
+    } else if (filter.status === 'archived') {
+      sql += ' AND archived = 1'
+    } else {
+      sql += ' AND archived = 0'
     }
     if (filter.search) {
       sql += ' AND id IN (SELECT id FROM session_fts WHERE session_fts MATCH ?)'
@@ -230,7 +237,7 @@ export class DatabaseManager {
   getCounts(): { byTool: Record<string, number>, byProject: Record<string, number>, total: number } {
     const byTool: Record<string, number> = {}
     const byProject: Record<string, number> = {}
-    const rows = this.db.prepare('SELECT tool, project_name FROM unified_session').all() as Array<{ tool: string; project_name: string | null }>
+    const rows = this.db.prepare('SELECT tool, project_name FROM unified_session WHERE archived = 0').all() as Array<{ tool: string; project_name: string | null }>
     for (const r of rows) {
       byTool[r.tool] = (byTool[r.tool] || 0) + 1
       if (r.project_name) {
@@ -240,13 +247,26 @@ export class DatabaseManager {
     return { byTool, byProject, total: rows.length }
   }
 
-  getStatusCounts(): { active: number; starred: number } {
+  getStatusCounts(): { active: number; starred: number; archived: number } {
     const r = this.db.prepare(`
       SELECT
-        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
-        SUM(CASE WHEN starred = 1 THEN 1 ELSE 0 END) as starred
+        SUM(CASE WHEN is_active = 1 AND archived = 0 THEN 1 ELSE 0 END) as active,
+        SUM(CASE WHEN starred = 1 AND archived = 0 THEN 1 ELSE 0 END) as starred,
+        SUM(CASE WHEN archived = 1 THEN 1 ELSE 0 END) as archived
       FROM unified_session
-    `).get() as { active: number; starred: number }
-    return { active: r.active || 0, starred: r.starred || 0 }
+    `).get() as { active: number; starred: number; archived: number }
+    return { active: r.active || 0, starred: r.starred || 0, archived: r.archived || 0 }
+  }
+
+  toggleArchive(sessionId: string): number {
+    const row = this.db.prepare('SELECT archived FROM unified_session WHERE id = ?').get(sessionId) as { archived: number } | undefined
+    const newVal = row ? (row.archived ? 0 : 1) : 1
+    this.db.prepare('UPDATE unified_session SET archived = ? WHERE id = ?').run(newVal, sessionId)
+    return newVal
+  }
+
+  deleteSession(sessionId: string) {
+    this.db.prepare('DELETE FROM session_message_preview WHERE session_id = ?').run(sessionId)
+    this.db.prepare('DELETE FROM unified_session WHERE id = ?').run(sessionId)
   }
 }
