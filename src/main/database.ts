@@ -86,11 +86,11 @@ export class DatabaseManager {
 
   upsertSession(session: UnifiedSession) {
     const existing = this.db
-      .prepare('SELECT updated_at, archived, pinned FROM unified_session WHERE id = ?')
-      .get(session.id) as { updated_at: number | null; archived: number; pinned: number } | undefined
+      .prepare('SELECT updated_at, archived, pinned, message_count FROM unified_session WHERE id = ?')
+      .get(session.id) as { updated_at: number | null; archived: number; pinned: number; message_count: number } | undefined
 
     if (existing && existing.updated_at && session.updatedAt && existing.updated_at >= session.updatedAt) {
-      return
+      if (!session.messageCount || existing.message_count >= session.messageCount) return
     }
 
     if (existing && existing.archived) {

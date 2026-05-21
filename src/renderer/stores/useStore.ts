@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { UnifiedSession, ToolFilter, StatusFilter, TerminalTab } from '../../shared/types'
+import { Lang } from '../lib/i18n'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -61,6 +62,7 @@ interface AppState {
   terminalApp: string
   showSettings: boolean
   confirmDialog: { message: string; onConfirm: () => void } | null
+  language: Lang
 
   loadSessions: () => Promise<void>
   loadProjectNames: () => Promise<void>
@@ -82,8 +84,10 @@ interface AppState {
   toggleTheme: () => void
   setResumeAction: (v: 'system' | 'builtin') => void
   setTerminalApp: (v: string) => void
+  setShowSettings: (v: boolean) => void
   setConfirmDialog: (v: { message: string; onConfirm: () => void } | null) => void
   confirm: (message: string) => Promise<boolean>
+  setLanguage: (v: Lang) => void
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -110,6 +114,7 @@ export const useStore = create<AppState>((set, get) => ({
   terminalApp: localStorage.getItem('terminalApp') || '',
   showSettings: false,
   confirmDialog: null,
+  language: (localStorage.getItem('language') as Lang) || 'en',
 
   toggleTheme: () => {
     const next = get().theme === 'dark' ? 'light' : 'dark'
@@ -149,6 +154,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ detailSession: session, detailMessages: [], detailLoading: true })
     try {
       const messages = await window.api.getSessionMessages(session)
+      if (get().detailSession?.id !== session.id) return
       set({ detailMessages: messages, detailLoading: false })
     } catch {
       set({ detailLoading: false })
@@ -302,5 +308,10 @@ export const useStore = create<AppState>((set, get) => ({
         }
       })
     })
+  },
+
+  setLanguage: (v: Lang) => {
+    set({ language: v })
+    localStorage.setItem('language', v)
   }
 }))

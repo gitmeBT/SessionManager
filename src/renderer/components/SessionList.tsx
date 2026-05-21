@@ -1,27 +1,52 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
+import { memo, useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { GroupedVirtuoso } from 'react-virtuoso'
+import { Pin, Star, Archive, Trash2, Play, Search, Flame } from 'lucide-react'
 import { useStore } from '../stores/useStore'
 import { ToolIcon } from './Sidebar'
+import { cn } from '../lib/utils'
+import { translate } from '../lib/i18n'
 
-const SORT_OPTIONS = [
-  { key: 'updatedAt', label: 'Updated' },
-  { key: 'createdAt', label: 'Created' },
-  { key: 'messageCount', label: 'Rounds' },
-  { key: 'tokensTotal', label: 'Tokens' },
-  { key: 'cost', label: 'Cost' },
-] as const
+const SORT_KEYS = ['updatedAt', 'createdAt', 'messageCount', 'tokensTotal', 'cost'] as const
+const SORT_LABEL_KEYS: Record<string, string> = {
+  updatedAt: 'list.sort.updated',
+  createdAt: 'list.sort.created',
+  messageCount: 'list.sort.rounds',
+  tokensTotal: 'list.sort.tokens',
+  cost: 'list.sort.cost',
+}
 
-const GROUP_LABELS = [
-  { key: 'today', label: 'Today' },
-  { key: 'week', label: 'Past Week' },
-  { key: 'month', label: 'Past Month' },
-  { key: 'older', label: 'Older' },
-] as const
+const GROUP_KEYS = ['today', 'week', 'month', 'older'] as const
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  today: 'list.group.today',
+  week: 'list.group.week',
+  month: 'list.group.month',
+  older: 'list.group.older',
+}
 
 function formatTokens(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
   if (n >= 1000) return (n / 1000).toFixed(1) + 'k'
   return String(n)
+}
+
+function formatRelativeTime(ts: number): string {
+  const now = Date.now()
+  const date = new Date(ts * 1000)
+  const diffMs = now - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffH = Math.floor(diffMs / 3600000)
+  const diffD = Math.floor(diffMs / 86400000)
+
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  if (diffH < 24) return `${diffH}h ago`
+  if (diffD < 30) return `${diffD}d ago`
+  const y = date.getFullYear() % 100
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}${m}${d}`
 }
 
 function formatCost(n: number): string {
@@ -32,7 +57,7 @@ function formatCost(n: number): string {
 
 type CtxMenuState = { x: number; y: number; sessionId: string; session: any } | null
 
-function ContextMenu({ ctx, onClose, togglePin, toggleStar, toggleArchive, deleteSession }: {
+const ContextMenu = memo(function ContextMenu({ ctx, onClose, togglePin, toggleStar, toggleArchive, deleteSession }: {
   ctx: CtxMenuState
   onClose: () => void
   togglePin: (id: string) => void
@@ -40,6 +65,7 @@ function ContextMenu({ ctx, onClose, togglePin, toggleStar, toggleArchive, delet
   toggleArchive: (id: string) => void
   deleteSession: (id: string) => void
 }) {
+  const lang = useStore(s => s.language)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -89,38 +115,42 @@ function ContextMenu({ ctx, onClose, togglePin, toggleStar, toggleArchive, delet
 
   const s = ctx.session
   const items = [
-    { label: s.pinned ? '📌 Unpin' : '📌 Pin', action: () => togglePin(ctx.sessionId) },
-    { label: s.starred ? '★ Unstar' : '☆ Star', action: () => toggleStar(ctx.sessionId) },
-    { label: '📦 Archive', action: () => { onClose(); useStore.getState().confirm('Archive this session?').then(ok => { if (ok) toggleArchive(ctx.sessionId) }) } },
-    { label: '🗑 Delete', action: () => { onClose(); useStore.getState().confirm('Delete this session from index?').then(ok => { if (ok) deleteSession(ctx.sessionId) }) } },
+    { icon: Pin, label: s.pinned ? translate('ctx.unpin', lang) : translate('ctx.pin', lang), action: () => togglePin(ctx.sessionId) },
+    { icon: Star, label: s.starred ? translate('ctx.unstar', lang) : translate('ctx.star', lang), action: () => toggleStar(ctx.sessionId) },
+    { icon: Archive, label: translate('ctx.archive', lang), action: () => { onClose(); useStore.getState().confirm(translate('confirm.archive', lang)).then(ok => { if (ok) toggleArchive(ctx.sessionId) }) } },
+    { icon: Trash2, label: translate('ctx.delete', lang), danger: true, action: () => { onClose(); useStore.getState().confirm(translate('confirm.delete', lang)).then(ok => { if (ok) deleteSession(ctx.sessionId) }) } },
   ]
 
   return createPortal(
-    <div ref={ref} className="ctx-menu-enter" style={{
-      position: 'fixed', zIndex: 9999, left: ctx.x, top: ctx.y,
-      background: 'var(--bg-card)', border: '1px solid var(--border)',
-      borderRadius: 8, padding: '4px 0', minWidth: 150,
-      boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-      transformOrigin: 'top left'
-    }}>
-      {items.map(({ label, action }) => {
-        const isDelete = label.startsWith('🗑')
-        return (
-          <div key={label} onClick={() => { action(); onClose() }}
-            style={{
-              padding: '6px 14px', fontSize: 12, cursor: 'pointer',
-              color: isDelete ? '#f87171' : 'var(--text-primary)',
-              fontFamily: 'var(--font-mono)'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-          >{label}</div>
-        )
-      })}
-    </div>,
+    <AnimatePresence>
+      <motion.div
+        ref={ref}
+        initial={{ scale: 0.92, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.92, opacity: 0 }}
+        transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        style={{ position: 'fixed', zIndex: 9999, left: ctx.x, top: ctx.y, minWidth: 150 }}
+        className="rounded-lg border border-border bg-card/80 p-1 shadow-2xl backdrop-blur-xl"
+      >
+        {items.map(({ icon: Icon, label, danger, action }) => (
+          <div
+            key={label}
+            onClick={() => { action(); onClose() }}
+            className={cn(
+              'flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs transition-colors',
+              danger ? 'text-danger hover:bg-danger/10' : 'text-foreground hover:bg-hover'
+            )}
+            style={{ fontFamily: 'var(--font-mono)' }}
+          >
+            <Icon size={13} />
+            {label}
+          </div>
+        ))}
+      </motion.div>
+    </AnimatePresence>,
     document.body
   )
-}
+})
 
 function getTimeGroup(ts: number | null): string {
   if (!ts) return 'older'
@@ -133,14 +163,21 @@ function getTimeGroup(ts: number | null): string {
 }
 
 export function SessionList() {
-  const {
-    sessions, searchQuery, setSearch,
-    sortBy, setSortBy, openDetail,
-    togglePin, toggleStar, toggleArchive, deleteSession
-  } = useStore()
+  const sessions = useStore(s => s.sessions)
+  const searchQuery = useStore(s => s.searchQuery)
+  const setSearch = useStore(s => s.setSearch)
+  const sortBy = useStore(s => s.sortBy)
+  const setSortBy = useStore(s => s.setSortBy)
+  const openDetail = useStore(s => s.openDetail)
+  const togglePin = useStore(s => s.togglePin)
+  const toggleStar = useStore(s => s.toggleStar)
+  const toggleArchive = useStore(s => s.toggleArchive)
+  const deleteSession = useStore(s => s.deleteSession)
+  const lang = useStore(s => s.language)
 
   const [ctxMenu, setCtxMenu] = useState<CtxMenuState>(null)
   const closeCtx = useCallback(() => setCtxMenu(null), [])
+  const [selectedIndex, setSelectedIndex] = useState(0)
 
   const sortedSessions = useMemo(() => {
     let list = [...(sessions || [])]
@@ -164,112 +201,129 @@ export function SessionList() {
     return list
   }, [sessions, searchQuery, sortBy])
 
-  const grouped = useMemo(() => {
+  const visibleGroups = useMemo(() => {
     const groups: Record<string, typeof sortedSessions> = { today: [], week: [], month: [], older: [] }
     for (const s of sortedSessions) {
       const g = getTimeGroup(s.updatedAt)
       groups[g].push(s)
     }
-    return groups
+    return GROUP_KEYS
+      .filter(key => groups[key] && groups[key].length > 0)
+      .map(key => ({ key, label: translate(GROUP_LABEL_KEYS[key] as any, lang), items: groups[key] }))
+  }, [sortedSessions, lang])
+
+  const groupCounts = useMemo(() => visibleGroups.map(g => g.items.length), [visibleGroups])
+
+  const itemData = useMemo(() => {
+    const flat: { session: any; groupIndex: number }[] = []
+    visibleGroups.forEach((g, gi) => {
+      for (const session of g.items) {
+        flat.push({ session, groupIndex: gi })
+      }
+    })
+    return flat
+  }, [visibleGroups])
+
+  useEffect(() => {
+    setSelectedIndex(0)
   }, [sortedSessions])
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setSelectedIndex(i => Math.min(i + 1, itemData.length - 1))
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setSelectedIndex(i => Math.max(i - 1, 0))
+      } else if (e.key === 'Enter' && itemData[selectedIndex]) {
+        e.preventDefault()
+        openDetail(itemData[selectedIndex].session)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [itemData, selectedIndex, openDetail])
+
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style={{
-        padding: '8px 16px',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        flexShrink: 0
-      }}>
-        <input
-          type="text"
-          placeholder="Search sessions..."
-          value={searchQuery}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '6px 10px',
-            fontSize: 12,
-            borderRadius: 6,
-            border: '1px solid var(--border)',
-            background: 'var(--bg-primary)',
-            color: 'var(--text-primary)'
-          }}
-        />
-        <div style={{ display: 'flex', gap: 4 }}>
-          {SORT_OPTIONS.map(opt => (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Search + sort bar */}
+      <div className="flex shrink-0 flex-col gap-3 border-b border-border px-6 py-4">
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground-muted" />
+          <input
+            type="text"
+            placeholder={translate('list.search', lang)}
+            value={searchQuery}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background py-2.5 pr-3 pl-9 text-xs text-foreground transition-colors focus:border-primary"
+          />
+        </div>
+        <div className="flex gap-1">
+          {SORT_KEYS.map(key => (
             <button
-              key={opt.key}
-              onClick={() => setSortBy(opt.key)}
-              style={{
-                padding: '3px 8px',
-                fontSize: 10,
-                borderRadius: 4,
-                border: 'none',
-                cursor: 'pointer',
-                background: sortBy === opt.key ? 'var(--bg-hover)' : 'transparent',
-                color: sortBy === opt.key ? 'var(--text-primary)' : 'var(--text-muted)',
-                fontWeight: sortBy === opt.key ? 600 : 400
-              }}
+              key={key}
+              onClick={() => setSortBy(key)}
+              className={cn(
+                'cursor-pointer rounded px-2 py-0.5 text-[10px] transition-colors',
+                sortBy === key
+                  ? 'bg-hover font-semibold text-foreground'
+                  : 'text-foreground-muted hover:text-foreground-secondary'
+              )}
             >
-              {opt.label}
+              {translate(SORT_LABEL_KEYS[key] as any, lang)}
             </button>
           ))}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {sortedSessions.length === 0 && (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-            No sessions found
+      {/* Session list */}
+      <div className="flex-1 overflow-hidden">
+        {sortedSessions.length === 0 ? (
+          <div className="px-5 py-10 text-center text-xs text-foreground-muted">
+            {translate('list.noSessions', lang)}
           </div>
+        ) : (
+          <GroupedVirtuoso
+            groupCounts={groupCounts}
+            groupContent={(index) => {
+              const g = visibleGroups[index]
+              return (
+                <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background-secondary/80 px-6 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-foreground-muted backdrop-blur-sm">
+                  <span>{g.label}</span>
+                  <span className="text-[9px] opacity-60">{g.items.length}</span>
+                  <div className="h-px flex-1 bg-border/50" />
+                </div>
+              )
+            }}
+            itemContent={(index) => {
+              const { session } = itemData[index]
+              return (
+                <SessionCard
+                  session={session}
+                  openDetail={openDetail}
+                  setCtxMenu={setCtxMenu}
+                  selected={index === selectedIndex}
+                />
+              )
+            }}
+          />
         )}
-        {GROUP_LABELS.map(({ key, label }) => {
-          const items = grouped[key]
-          if (!items || items.length === 0) return null
-          return (
-            <div key={key}>
-              <div style={{
-                padding: '8px 16px 6px',
-                fontSize: 10,
-                fontWeight: 600,
-                color: 'var(--text-muted)',
-                textTransform: 'uppercase',
-                letterSpacing: 0.5,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                position: 'sticky',
-                top: 0,
-                zIndex: 1,
-                background: 'var(--bg-secondary)',
-                borderBottom: '1px solid var(--border)'
-              }}>
-                <span>{label}</span>
-                <span style={{ fontSize: 9, opacity: 0.6 }}>{items.length}</span>
-                <div style={{ flex: 1, height: 1, background: 'var(--border)', opacity: 0.5 }} />
-              </div>
-              {items.map(session => (
-                <SessionCard key={session.id} session={session} openDetail={openDetail} setCtxMenu={setCtxMenu} />
-              ))}
-            </div>
-          )
-        })}
       </div>
       <ContextMenu ctx={ctxMenu} onClose={closeCtx} togglePin={togglePin} toggleStar={toggleStar} toggleArchive={toggleArchive} deleteSession={deleteSession} />
     </div>
   )
 }
 
-function SessionCard({ session, openDetail, setCtxMenu }: { session: any; openDetail: (s: any) => void; setCtxMenu: (v: CtxMenuState) => void }) {
-  const { resumeAction, terminalApp } = useStore()
+const SessionCard = memo(function SessionCard({ session, openDetail, setCtxMenu, selected }: { session: any; openDetail: (s: any) => void; setCtxMenu: (v: CtxMenuState) => void; selected?: boolean }) {
+  const resumeAction = useStore(s => s.resumeAction)
+  const terminalApp = useStore(s => s.terminalApp)
+  const lang = useStore(s => s.language)
   const tokensStr = session.tokensTotal > 0 ? formatTokens(session.tokensTotal) : ''
   const costStr = formatCost(session.cost)
   const isHot = session.tokensTotal > 50000
   const isEmpty = session.messageCount === 0
-  const dimStyle: React.CSSProperties = isEmpty ? { opacity: 0.45 } : {}
 
   const handleResume = (s: any) => {
     const cmd = s.tool === 'opencode'
@@ -295,80 +349,53 @@ function SessionCard({ session, openDetail, setCtxMenu }: { session: any; openDe
     <div
       onClick={() => openDetail(session)}
       onContextMenu={handleContextMenu}
-      style={{
-        padding: '12px 14px',
-        margin: '3px 12px',
-        borderRadius: 8,
-        cursor: 'pointer',
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        transition: 'border-color 0.15s',
-        ...dimStyle
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)' }}
+      className={cn(
+        'glass-card mx-5 my-2 cursor-pointer rounded-xl border px-5 py-4 transition-all duration-200 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5',
+        selected ? 'border-primary/50 bg-primary/10 shadow-md shadow-primary/10' : 'border-border/50',
+        isEmpty && 'opacity-45'
+      )}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, ...dimStyle }}>
-        <div style={{ paddingTop: 2 }}>
-          <ToolIcon tool={session.tool} size={18} />
+      <div className={cn('flex items-start gap-3.5', isEmpty && 'opacity-45')}>
+        <div className="pt-1">
+          <ToolIcon tool={session.tool} size={20} />
         </div>
-        <div style={{ flex: 1, overflow: 'hidden' }}>
-          <div style={{
-            fontSize: 12, fontWeight: 500, color: 'var(--text-primary)',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            display: 'flex', alignItems: 'center', gap: 4
-          }}>
-            {session.pinned ? <span style={{ fontSize: 11, flexShrink: 0 }}>📌</span> : null}
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {session.title || 'Untitled'}
-            </span>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <div className="flex items-center gap-1.5 overflow-hidden text-[13px] font-medium text-foreground">
+            {session.pinned && <Pin size={12} fill="currentColor" className="shrink-0 text-primary" />}
+            <span className="truncate">{session.title || translate('list.untitled', lang)}</span>
             {isEmpty && (
-              <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: 6 }}>(empty)</span>
+              <span className="ml-1.5 italic text-foreground-muted">{translate('list.empty', lang)}</span>
             )}
           </div>
-          <div style={{
-            fontSize: 10, color: 'var(--text-muted)', marginTop: 4,
-            display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center'
-          }}>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-foreground-muted">
             {session.projectName && (
-              <span style={{
-                background: 'var(--bg-hover)', padding: '1px 6px',
-                borderRadius: 3, border: '1px solid var(--border)',
-                fontSize: 9, color: 'var(--text-secondary)',
-                maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-              }}>{session.projectName}</span>
-            )}
-            {session.updatedAt && (
-              <span>{new Date(session.updatedAt * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-            )}
-            {session.messageCount > 0 && (
-              <span>{session.messageCount} rounds</span>
-            )}
-            {tokensStr && (
-              <span style={{ color: isHot ? '#f87171' : 'var(--accent)' }}>
-                {isHot ? '🔥 ' : ''}{tokensStr} tok
+              <span className="max-w-[160px] truncate rounded-md border border-border/50 bg-hover/50 px-2 py-0.5 text-[10px] text-foreground-secondary">
+                {session.projectName}
               </span>
             )}
-            {costStr && <span style={{ color: 'var(--orange)' }}>{costStr}</span>}
+            {session.updatedAt && (
+              <span>{formatRelativeTime(session.updatedAt)}</span>
+            )}
+            {session.messageCount > 0 && (
+              <span>{session.messageCount} {translate('list.rounds', lang)}</span>
+            )}
+            {tokensStr && (
+              <span className={cn('flex items-center gap-0.5', isHot ? 'text-danger' : 'text-primary')}>
+                {isHot && <Flame size={9} />}
+                {tokensStr} {translate('list.tok', lang)}
+              </span>
+            )}
+            {costStr && <span className="text-orange">{costStr}</span>}
           </div>
         </div>
         <button
-          onClick={e => {
-            e.stopPropagation()
-            handleResume(session)
-          }}
-          style={{
-            padding: '4px 10px', fontSize: 10, borderRadius: 5,
-            border: '1px solid var(--border)', background: 'var(--bg-hover)',
-            color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0,
-            marginTop: 2, transition: 'all 0.15s'
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--accent)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+          onClick={e => { e.stopPropagation(); handleResume(session) }}
+          className="mt-1 flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border/50 bg-hover/50 px-3 py-2 text-[11px] text-foreground-secondary transition-all duration-150 hover:border-primary hover:bg-primary hover:text-white hover:shadow-md hover:shadow-primary/25"
         >
-          Resume
+          <Play size={9} />
+          {translate('list.resume', lang)}
         </button>
       </div>
     </div>
   )
-}
+})

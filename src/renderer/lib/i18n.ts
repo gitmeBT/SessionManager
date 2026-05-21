@@ -1,0 +1,142 @@
+export type Lang = 'en' | 'zh' | 'es' | 'ar' | 'hi' | 'pt' | 'bn' | 'ru' | 'ja' | 'ko' | 'fr' | 'de' | 'tr' | 'it' | 'th' | 'vi' | 'pl' | 'nl' | 'uk' | 'id'
+
+export const LANGUAGES: { value: Lang; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'zh', label: '中文' },
+  { value: 'es', label: 'Español' },
+  { value: 'ar', label: 'العربية' },
+  { value: 'hi', label: 'हिन्दी' },
+  { value: 'pt', label: 'Português' },
+  { value: 'bn', label: 'বাংলা' },
+  { value: 'ru', label: 'Русский' },
+  { value: 'ja', label: '日本語' },
+  { value: 'ko', label: '한국어' },
+  { value: 'fr', label: 'Français' },
+  { value: 'de', label: 'Deutsch' },
+  { value: 'tr', label: 'Türkçe' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'th', label: 'ไทย' },
+  { value: 'vi', label: 'Tiếng Việt' },
+  { value: 'pl', label: 'Polski' },
+  { value: 'nl', label: 'Nederlands' },
+  { value: 'uk', label: 'Українська' },
+  { value: 'id', label: 'Bahasa Indonesia' },
+]
+
+// Helper to create a full translation row with fallback to English
+function row(en: string, zh: string, overrides?: Partial<Record<Exclude<Lang, 'en' | 'zh'>, string>>): Record<Lang, string> {
+  return {
+    en, zh,
+    es: overrides?.es ?? en,
+    ar: overrides?.ar ?? en,
+    hi: overrides?.hi ?? en,
+    pt: overrides?.pt ?? en,
+    bn: overrides?.bn ?? en,
+    ru: overrides?.ru ?? en,
+    ja: overrides?.ja ?? en,
+    ko: overrides?.ko ?? en,
+    fr: overrides?.fr ?? en,
+    de: overrides?.de ?? en,
+    tr: overrides?.tr ?? en,
+    it: overrides?.it ?? en,
+    th: overrides?.th ?? en,
+    vi: overrides?.vi ?? en,
+    pl: overrides?.pl ?? en,
+    nl: overrides?.nl ?? en,
+    uk: overrides?.uk ?? en,
+    id: overrides?.id ?? en,
+  }
+}
+
+const t: Record<string, Record<Lang, string>> = {
+  // Sidebar
+  'sidebar.tool': row('Tool', '工具', { es:'Herramienta', ar:'أداة', hi:'टूल', pt:'Ferramenta', bn:'টুল', ru:'Инструмент', ja:'ツール', ko:'도구', fr:'Outil', de:'Werkzeug', tr:'Araç', it:'Strumento', th:'เครื่องมือ', vi:'Công cụ', pl:'Narzędzie', nl:'Gereedschap', uk:'Інструмент', id:'Alat' }),
+  'sidebar.allTools': row('All Tools', '全部工具', { es:'Todas', ar:'الكل', hi:'सभी टूल', pt:'Todas', bn:'সব টুল', ru:'Все', ja:'すべて', ko:'전체', fr:'Tous', de:'Alle', tr:'Tümü', it:'Tutti', th:'ทั้งหมด', vi:'Tất cả', pl:'Wszystkie', nl:'Alle', uk:'Всі', id:'Semua' }),
+  'sidebar.project': row('Project', '项目', { es:'Proyecto', ar:'مشروع', hi:'प्रोजेक्ट', pt:'Projeto', bn:'প্রকল্প', ru:'Проект', ja:'プロジェクト', ko:'프로젝트', fr:'Projet', de:'Projekt', tr:'Proje', it:'Progetto', th:'โปรเจกต์', vi:'Dự án', pl:'Projekt', nl:'Project', uk:'Проєкт', id:'Proyek' }),
+  'sidebar.allProjects': row('All Projects', '全部项目', { es:'Todos', ar:'الكل', hi:'सभी', pt:'Todos', bn:'সব', ru:'Все', ja:'すべて', ko:'전체', fr:'Tous', de:'Alle', tr:'Tümü', it:'Tutti', th:'ทั้งหมด', vi:'Tất cả', pl:'Wszystkie', nl:'Alle', uk:'Всі', id:'Semua' }),
+  'sidebar.status': row('Status', '状态', { es:'Estado', ar:'الحالة', hi:'स्थिति', pt:'Status', bn:'স্ট্যাটাস', ru:'Статус', ja:'ステータス', ko:'상태', fr:'Statut', de:'Status', tr:'Durum', it:'Stato', th:'สถานะ', vi:'Trạng thái', pl:'Status', nl:'Status', uk:'Статус', id:'Status' }),
+  'sidebar.status.all': row('All', '全部', { es:'Todo', ar:'الكل', hi:'सभी', pt:'Todos', bn:'সব', ru:'Все', ja:'すべて', ko:'전체', fr:'Tous', de:'Alle', tr:'Tümü', it:'Tutti', th:'ทั้งหมด', vi:'Tất cả', pl:'Wszystkie', nl:'Alle', uk:'Всі', id:'Semua' }),
+  'sidebar.status.active': row('Active', '活跃', { es:'Activo', ar:'نشط', hi:'सक्रिय', pt:'Ativo', bn:'সক্রিয়', ru:'Активные', ja:'アクティブ', ko:'활성', fr:'Actif', de:'Aktiv', tr:'Aktif', it:'Attivo', th:'ใช้งาน', vi:'Hoạt động', pl:'Aktywne', nl:'Actief', uk:'Активні', id:'Aktif' }),
+  'sidebar.status.starred': row('Starred', '已标星', { es:'Destacado', ar:'مميز', hi:'तारांकित', pt:'Favorito', bn:'তারাঙ্কিত', ru:'Избранные', ja:'スター付き', ko:'즐겨찾기', fr:'Favori', de:'Markiert', tr:'Yıldızlı', it:'Preferito', th:'ที่ติดดาว', vi:'Đã gắn sao', pl:'Oznaczone', nl:'Met ster', uk:'Обрані', id:'Berbintang' }),
+  'sidebar.status.pinned': row('Pinned', '已置顶', { es:'Fijado', ar:'مثبت', hi:'पिन किया', pt:'Fixado', bn:'পিন করা', ru:'Закреплённые', ja:'ピン留め', ko:'고정됨', fr:'Épinglé', de:'Angeheftet', tr:'Sabitlenmiş', it:'Fissato', th:'ปักหมุด', vi:'Đã ghim', pl:'Przypięte', nl:'Vastgemaakt', uk:'Закріплені', id:'Dipin' }),
+  'sidebar.status.archived': row('Archived', '已归档', { es:'Archivado', ar:'مؤرشف', hi:'संग्रहित', pt:'Arquivado', bn:'সংরক্ষিত', ru:'Архив', ja:'アーカイブ', ko:'보관됨', fr:'Archivé', de:'Archiviert', tr:'Arşivlenmiş', it:'Archiviato', th:'เก็บถาวร', vi:'Đã lưu trữ', pl:'Zarchiwizowane', nl:'Gearchiveerd', uk:'Архів', id:'Diarsipkan' }),
+  'sidebar.refresh': row('Refresh', '刷新', { es:'Actualizar', ar:'تحديث', hi:'रीफ़्रेश', pt:'Atualizar', bn:'রিফ্রেশ', ru:'Обновить', ja:'更新', ko:'새로고침', fr:'Actualiser', de:'Aktualisieren', tr:'Yenile', it:'Aggiorna', th:'รีเฟรช', vi:'Làm mới', pl:'Odśwież', nl:'Vernieuwen', uk:'Оновити', id:'Segarkan' }),
+  'sidebar.themeSwitch.light': row('Switch to light', '切换到亮色', { es:'Tema claro', ar:'الوضع الفاتح', hi:'लाइट मोड', pt:'Tema claro', bn:'লাইট মোড', ru:'Светлая тема', ja:'ライトモード', ko:'라이트 모드', fr:'Thème clair', de:'Helles Design', tr:'Açık tema', it:'Tema chiaro', th:'ธีมสว่าง', vi:'Chủ đề sáng', pl:'Jasny motyw', nl:'Licht thema', uk:'Світла тема', id:'Tema terang' }),
+  'sidebar.themeSwitch.dark': row('Switch to dark', '切换到暗色', { es:'Tema oscuro', ar:'الوضع الداكن', hi:'डार्क मोड', pt:'Tema escuro', bn:'ডার্ক মোড', ru:'Тёмная тема', ja:'ダークモード', ko:'다크 모드', fr:'Thème sombre', de:'Dunkles Design', tr:'Koyu tema', it:'Tema scuro', th:'ธีมมืด', vi:'Chủ đề tối', pl:'Ciemny motyw', nl:'Donker thema', uk:'Темна тема', id:'Tema gelap' }),
+  'sidebar.doubleClickExpand': row('Double-click to expand files', '双击展开文件', { es:'Doble clic para expandir', ar:'انقر مرتين للتوسيع', hi:'फ़ाइलें खोलने के लिए डबल-क्लिक करें', pt:'Duplo clique para expandir', bn:'ফাইল প্রসারিত করতে ডবল-ক্লিক', ru:'Двойной клик для раскрытия', ja:'ダブルクリックで展開', ko:'더블클릭으로 파일 열기', fr:'Double-clic pour développer', de:'Doppelklick zum Aufklappen', tr:'Dosyaları açmak için çift tıklayın', it:'Doppio clic per espandere', th:'ดับเบิลคลิกเพื่อขยาย', vi:'Nhấp đúp để mở rộng', pl:'Kliknij dwukrotnie, aby rozwinąć', nl:'Dubbelklik om uit te vouwen', uk:'Подвійний клік для розгортання', id:'Klik ganda untuk membuka' }),
+  'sidebar.empty': row('empty', '空', { es:'vacío', ar:'فارغ', hi:'खाली', pt:'vazio', bn:'খালি', ru:'пусто', ja:'空', ko:'비어있음', fr:'vide', de:'leer', tr:'boş', it:'vuoto', th:'ว่าง', vi:'trống', pl:'puste', nl:'leeg', uk:'порожньо', id:'kosong' }),
+
+  // SessionList
+  'list.search': row('Search sessions...', '搜索会话...', { es:'Buscar sesiones...', ar:'بحث الجلسات...', hi:'सत्र खोजें...', pt:'Buscar sessões...', bn:'সেশন খুঁজুন...', ru:'Поиск сессий...', ja:'セッションを検索...', ko:'세션 검색...', fr:'Rechercher...', de:'Sitzungen suchen...', tr:'Oturum ara...', it:'Cerca sessioni...', th:'ค้นหาเซสชัน...', vi:'Tìm kiếm...', pl:'Szukaj sesji...', nl:'Sessies zoeken...', uk:'Пошук сесій...', id:'Cari sesi...' }),
+  'list.sort.updated': row('Updated', '更新时间', { es:'Actualizado', ar:'محدث', hi:'अपडेट', pt:'Atualizado', bn:'আপডেট', ru:'Обновлено', ja:'更新', ko:'업데이트', fr:'Mis à jour', de:'Aktualisiert', tr:'Güncellendi', it:'Aggiornato', th:'อัปเดต', vi:'Cập nhật', pl:'Zaktualizowano', nl:'Bijgewerkt', uk:'Оновлено', id:'Diperbarui' }),
+  'list.sort.created': row('Created', '创建时间', { es:'Creado', ar:'أنشئ', hi:'बनाया', pt:'Criado', bn:'তৈরি', ru:'Создано', ja:'作成', ko:'생성', fr:'Créé', de:'Erstellt', tr:'Oluşturuldu', it:'Creato', th:'สร้าง', vi:'Tạo', pl:'Utworzono', nl:'Aangemaakt', uk:'Створено', id:'Dibuat' }),
+  'list.sort.rounds': row('Rounds', '对话次数', { es:'Rondas', ar:'جولات', hi:'राउंड', pt:'Rodadas', bn:'রাউন্ড', ru:'Раунды', ja:'回数', ko:'횟수', fr:'Tours', de:'Runden', tr:'Tur', it:'Turni', th:'รอบ', vi:'Vòng', pl:'Rundy', nl:'Ronden', uk:'Раунди', id:'Putaran' }),
+  'list.sort.tokens': row('Tokens', 'Tokens'),
+  'list.sort.cost': row('Cost', '花费', { es:'Costo', ar:'تكلفة', hi:'लागत', pt:'Custo', bn:'খরচ', ru:'Стоимость', ja:'コスト', ko:'비용', fr:'Coût', de:'Kosten', tr:'Maliyet', it:'Costo', th:'ต้นทุน', vi:'Chi phí', pl:'Koszt', nl:'Kosten', uk:'Вартість', id:'Biaya' }),
+  'list.group.today': row('Today', '今天', { es:'Hoy', ar:'اليوم', hi:'आज', pt:'Hoje', bn:'আজ', ru:'Сегодня', ja:'今日', ko:'오늘', fr:"Aujourd'hui", de:'Heute', tr:'Bugün', it:'Oggi', th:'วันนี้', vi:'Hôm nay', pl:'Dzisiaj', nl:'Vandaag', uk:'Сьогодні', id:'Hari ini' }),
+  'list.group.week': row('Past Week', '最近一周', { es:'Semana pasada', ar:'الأسبوع الماضي', hi:'पिछला सप्ताह', pt:'Semana passada', bn:'গত সপ্তাহ', ru:'Неделя', ja:'過去1週間', ko:'지난 주', fr:'Semaine dernière', de:'Letzte Woche', tr:'Geçen hafta', it:'Settimana scorsa', th:'สัปดาห์ที่แล้ว', vi:'Tuần trước', pl:'Ostatni tydzień', nl:'Afgelopen week', uk:'Тиждень', id:'Minggu lalu' }),
+  'list.group.month': row('Past Month', '最近一月', { es:'Mes pasado', ar:'الشهر الماضي', hi:'पिछला महीना', pt:'Mês passado', bn:'গত মাস', ru:'Месяц', ja:'過去1ヶ月', ko:'지난 달', fr:'Mois dernier', de:'Letzter Monat', tr:'Geçen ay', it:'Mese scorso', th:'เดือนที่แล้ว', vi:'Tháng trước', pl:'Ostatni miesiąс', nl:'Afgelopen maand', uk:'Місяць', id:'Bulan lalu' }),
+  'list.group.older': row('Older', '更早', { es:'Anterior', ar:'أقدم', hi:'पुराना', pt:'Mais antigo', bn:'পুরানো', ru:'Ранее', ja:'それ以前', ko:'이전', fr:'Plus ancien', de:'Älter', tr:'Daha eski', it:'Più vecchio', th:'เก่ากว่า', vi:'Cũ hơn', pl:'Starsze', nl:'Ouder', uk:'Раніші', id:'Lebih lama' }),
+  'list.noSessions': row('No sessions found', '没有找到会话', { es:'Sin sesiones', ar:'لا توجد جلسات', hi:'कोई सत्र नहीं', pt:'Sem sessões', bn:'কোনো সেশন নেই', ru:'Сессий нет', ja:'セッションなし', ko:'세션 없음', fr:'Aucune session', de:'Keine Sitzungen', tr:'Oturum yok', it:'Nessuna sessione', th:'ไม่พบเซสชัน', vi:'Không có phiên', pl:'Brak sesji', nl:'Geen sessies', uk:'Немає сесій', id:'Tidak ada sesi' }),
+  'list.untitled': row('Untitled', '无标题', { es:'Sin título', ar:'بدون عنوان', hi:'शीर्षकहीन', pt:'Sem título', bn:'শিরোনামহীন', ru:'Без названия', ja:'無題', ko:'제목 없음', fr:'Sans titre', de:'Unbenannt', tr:'Başlıksız', it:'Senza titolo', th:'ไม่มีชื่อ', vi:'Không tiêu đề', pl:'Bez tytułu', nl:'Naamloos', uk:'Без назви', id:'Tanpa judul' }),
+  'list.empty': row('(empty)', '(空)', { es:'(vacío)', ar:'(فارغ)', hi:'(खाली)', pt:'(vazio)', bn:'(খালি)', ru:'(пусто)', ja:'(空)', ko:'(비어있음)', fr:'(vide)', de:'(leer)', tr:'(boş)', it:'(vuoto)', th:'(ว่าง)', vi:'(trống)', pl:'(puste)', nl:'(leeg)', uk:'(порожньо)', id:'(kosong)' }),
+  'list.rounds': row('rounds', '对话次数', { es:'rondas', ar:'جولات', hi:'राउंड', pt:'rodadas', bn:'রাউন্ড', ru:'раунды', ja:'回', ko:'회', fr:'tours', de:'Runden', tr:'tur', it:'turni', th:'รอบ', vi:'vòng', pl:'rundy', nl:'ronden', uk:'раунди', id:'putaran' }),
+  'list.tok': row('tok', 'tok'),
+  'list.resume': row('Resume', '恢复会话', { es:'Reanudar', ar:'استئناف', hi:'फिर से शुरू', pt:'Retomar', bn:'পুনরায় শুরু', ru:'Продолжить', ja:'再開', ko:'재개', fr:'Reprendre', de:'Fortsetzen', tr:'Devam et', it:'Riprendi', th:'ดำเนินต่อ', vi:'Tiếp tục', pl:'Wznów', nl:'Hervatten', uk:'Продовжити', id:'Lanjutkan' }),
+
+  // Context menu
+  'ctx.pin': row('Pin', '置顶', { es:'Fijar', ar:'تثبيت', hi:'पिन', pt:'Fixar', bn:'পিন', ru:'Закрепить', ja:'ピン留め', ko:'고정', fr:'Épingler', de:'Anheften', tr:'Sabitle', it:'Fissa', th:'ปักหมุด', vi:'Ghim', pl:'Przypnij', nl:'Vastmaken', uk:'Закріпити', id:'Pin' }),
+  'ctx.unpin': row('Unpin', '取消置顶', { es:'Desfijar', ar:'إلغاء التثبيت', hi:'अनपिन', pt:'Desafixar', bn:'আনপিন', ru:'Открепить', ja:'ピン解除', ko:'고정 해제', fr:'Désépingler', de:'Lösen', tr:'Sabitlemeyi kaldır', it:'Rimuovi', th:'ยกเลิกปักหมุด', vi:'Bỏ ghim', pl:'Odepnij', nl:'Losmaken', uk:'Відкріпити', id:'Lepas pin' }),
+  'ctx.star': row('Star', '标星', { es:'Destacar', ar:'تمييز', hi:'तारांकित', pt:'Favoritar', bn:'তারাঙ্কিত', ru:'В избранное', ja:'スター', ko:'즐겨찾기', fr:'Favoriser', de:'Markieren', tr:'Yıldızla', it:'Preferisci', th:'ติดดาว', vi:'Gắn sao', pl:'Oznacz', nl:'Ster', uk:'В обране', id:'Beri bintang' }),
+  'ctx.unstar': row('Unstar', '取消标星', { es:'Quitar destaque', ar:'إلغاء التمييز', hi:'तारा हटाएं', pt:'Desfavoritar', bn:'তারা সরান', ru:'Убрать', ja:'スター解除', ko:'즐겨찾기 해제', fr:'Retirer', de:'Markierung aufheben', tr:'Yıldızı kaldır', it:'Rimuovi', th:'ยกเลิกดาว', vi:'Bỏ sao', pl:'Odznacz', nl:'Ster verwijderen', uk:'Прибрати', id:'Hapus bintang' }),
+  'ctx.archive': row('Archive', '归档', { es:'Archivar', ar:'أرشفة', hi:'संग्रहित', pt:'Arquivar', bn:'সংরক্ষণ', ru:'В архив', ja:'アーカイブ', ko:'보관', fr:'Archiver', de:'Archivieren', tr:'Arşivle', it:'Archivia', th:'เก็บถาวร', vi:'Lưu trữ', pl:'Zarchiwizuj', nl:'Archiveren', uk:'В архів', id:'Arsipkan' }),
+  'ctx.delete': row('Delete', '删除', { es:'Eliminar', ar:'حذف', hi:'हटाएं', pt:'Excluir', bn:'মুছুন', ru:'Удалить', ja:'削除', ko:'삭제', fr:'Supprimer', de:'Löschen', tr:'Sil', it:'Elimina', th:'ลบ', vi:'Xóa', pl:'Usuń', nl:'Verwijderen', uk:'Видалити', id:'Hapus' }),
+
+  // SessionDetail
+  'detail.back': row('Back', '返回', { es:'Volver', ar:'رجوع', hi:'वापस', pt:'Voltar', bn:'ফিরে', ru:'Назад', ja:'戻る', ko:'뒤로', fr:'Retour', de:'Zurück', tr:'Geri', it:'Indietro', th:'กลับ', vi:'Quay lại', pl:'Wstecz', nl:'Terug', uk:'Назад', id:'Kembali' }),
+  'detail.untitled': row('Untitled Session', '无标题会话', { es:'Sesión sin título', ar:'جلسة بدون عنوان', hi:'शीर्षकहीन सत्र', pt:'Sessão sem título', bn:'শিরোনামহীন সেশন', ru:'Без названия', ja:'無題のセッション', ko:'제목 없는 세션', fr:'Session sans titre', de:'Unbenannte Sitzung', tr:'Başlıksız oturum', it:'Sessione senza titolo', th:'เซสชันไม่มีชื่อ', vi:'Phiên không tiêu đề', pl:'Sesja bez tytułu', nl:'Naamloze sessie', uk:'Сесія без назви', id:'Sesi tanpa judul' }),
+  'detail.resume': row('Resume', '恢复会话', { es:'Reanudar', ar:'استئناف', hi:'फिर से शुरू', pt:'Retomar', bn:'পুনরায় শুরু', ru:'Продолжить', ja:'再開', ko:'재개', fr:'Reprendre', de:'Fortsetzen', tr:'Devam et', it:'Riprendi', th:'ดำเนินต่อ', vi:'Tiếp tục', pl:'Wznów', nl:'Hervatten', uk:'Продовжити', id:'Lanjutkan' }),
+  'detail.star': row('Unstar', '取消标星'),
+  'detail.unstar': row('Star', '标星'),
+  'detail.pin': row('Unpin', '取消置顶'),
+  'detail.unpin': row('Pin', '置顶'),
+  'detail.archive': row('Archive', '归档'),
+  'detail.delete': row('Delete', '删除'),
+  'detail.confirm.archive': row('Archive this session? It will be hidden from the main list.', '归档此会话？它将从主列表中隐藏。', { es:'¿Archivar esta sesión? Se ocultará de la lista principal.', ar:'أرشفة هذه الجلسة؟ سيتم إخفاؤها.', hi:'इस सत्र को संग्रहित करें?', pt:'Arquivar esta sessão?', bn:'এই সেশন সংরক্ষণ করবেন?', ru:'Архивировать сессию?', ja:'このセッションをアーカイブしますか？', ko:'이 세션을 보관하시겠습니까?', fr:'Archiver cette session ?', de:'Sitzung archivieren?', tr:'Bu oturumu arşivle?', it:'Archiviare questa sessione?', th:'เก็บถาวรเซสชันนี้?', vi:'Lưu trữ phiên này?', pl:'Zarchiwizować sesję?', nl:'Sessie archiveren?', uk:'Архівувати сесію?', id:'Arsipkan sesi ini?' }),
+  'detail.confirm.delete': row('Permanently delete this session from the index?', '确定要从索引中永久删除此会话吗？', { es:'¿Eliminar permanentemente esta sesión?', ar:'حذف هذه الجلسة نهائياً؟', hi:'इस सत्र को स्थायी रूप से हटाएं?', pt:'Excluir permanentemente esta sessão?', bn:'এই সেশন স্থায়ীভাবে মুছবেন?', ru:'Удалить сессию навсегда?', ja:'このセッションを完全に削除しますか？', ko:'이 세션을 영구 삭제하시겠습니까?', fr:'Supprimer définitivement cette session ?', de:'Sitzung dauerhaft löschen?', tr:'Bu oturumu kalıcı olarak sil?', it:'Eliminare definitivamente questa sessione?', th:'ลบเซสชันนี้ถาวร?', vi:'Xóa vĩnh viễn phiên này?', pl:'Trwale usunąć sesję?', nl:'Sessie permanent verwijderen?', uk:'Остаточно видалити сесію?', id:'Hapus sesi ini secara permanen?' }),
+  'detail.loading': row('Loading messages...', '加载消息中...', { es:'Cargando mensajes...', ar:'جاري تحميل الرسائل...', hi:'संदेश लोड हो रहे हैं...', pt:'Carregando mensagens...', bn:'বার্তা লোড হচ্ছে...', ru:'Загрузка сообщений...', ja:'メッセージを読み込み中...', ko:'메시지 로딩 중...', fr:'Chargement...', de:'Nachrichten laden...', tr:'Mesajlar yükleniyor...', it:'Caricamento messaggi...', th:'กำลังโหลดข้อความ...', vi:'Đang tải tin nhắn...', pl:'Ładowanie wiadomości...', nl:'Berichten laden...', uk:'Завантаження повідомлень...', id:'Memuat pesan...' }),
+  'detail.noMessages': row('No messages found for this session', '此会话没有找到消息', { es:'Sin mensajes', ar:'لا توجد رسائل', hi:'कोई संदेश नहीं', pt:'Sem mensagens', bn:'কোনো বার্তা নেই', ru:'Нет сообщений', ja:'メッセージなし', ko:'메시지 없음', fr:'Aucun message', de:'Keine Nachrichten', tr:'Mesaj yok', it:'Nessun messaggio', th:'ไม่พบข้อความ', vi:'Không có tin nhắn', pl:'Brak wiadomości', nl:'Geen berichten', uk:'Немає повідомлень', id:'Tidak ada pesan' }),
+  'detail.you': row('You', '你', { es:'Tú', ar:'أنت', hi:'आप', pt:'Você', bn:'আপনি', ru:'Вы', ja:'あなた', ko:'나', fr:'Vous', de:'Sie', tr:'Siz', it:'Tu', th:'คุณ', vi:'Bạn', pl:'Ty', nl:'Jij', uk:'Ви', id:'Anda' }),
+  'detail.ai': row('AI', 'AI'),
+  'detail.toolCall': row('Tool Call', '工具调用', { es:'Llamada', ar:'استدعاء أداة', hi:'टूल कॉल', pt:'Chamada', bn:'টুল কল', ru:'Вызов', ja:'ツール呼び出し', ko:'도구 호출', fr:'Appel', de:'Aufruf', tr:'Araç çağrısı', it:'Chiamata', th:'เรียกใช้เครื่องมือ', vi:'Lệnh gọi', pl:'Wywołanie', nl:'Aanroep', uk:'Виклик', id:'Panggilan' }),
+  'detail.showAll': row('Show all', '展开全部', { es:'Mostrar todo', ar:'عرض الكل', hi:'सभी दिखाएं', pt:'Mostrar tudo', bn:'সব দেখুন', ru:'Показать всё', ja:'すべて表示', ko:'모두 보기', fr:'Tout afficher', de:'Alles anzeigen', tr:'Tümünü göster', it:'Mostra tutto', th:'แสดงทั้งหมด', vi:'Hiện tất cả', pl:'Pokaż wszystko', nl:'Alles tonen', uk:'Показати все', id:'Tampilkan semua' }),
+  'detail.showLess': row('Show less', '收起', { es:'Mostrar menos', ar:'عرض أقل', hi:'कम दिखाएं', pt:'Mostrar menos', bn:'কম দেখুন', ru:'Свернуть', ja:'折りたたむ', ko:'간략히', fr:'Réduire', de:'Weniger', tr:'Daha az göster', it:'Comprimi', th:'แสดงน้อยลง', vi:'Thu gọn', pl:'Pokaż mniej', nl:'Minder tonen', uk:'Згорнути', id:'Tampilkan lebih sedikit' }),
+  'detail.chars': row('chars', '字符', { es:'caracteres', ar:'حرف', hi:'अक्षर', pt:'caracteres', bn:'অক্ষর', ru:'символов', ja:'文字', ko:'문자', fr:'caractères', de:'Zeichen', tr:'karakter', it:'caratteri', th:'ตัวอักษร', vi:'ký tự', pl:'znaków', nl:'tekens', uk:'символів', id:'karakter' }),
+  'detail.msgs': row('msgs', '条消息', { es:'mensajes', ar:'رسائل', hi:'संदेश', pt:'mensagens', bn:'বার্তা', ru:'сообщ.', ja:'件', ko:'건', fr:'messages', de:'Nachr.', tr:'msj', it:'messaggi', th:'ข้อความ', vi:'tin nhắn', pl:'wiad.', nl:'berichten', uk:'повід.', id:'pesan' }),
+  'detail.tools': row('tools', '工具', { es:'herramientas', ar:'أدوات', hi:'टूल', pt:'ferramentas', bn:'টুল', ru:'инструменты', ja:'ツール', ko:'도구', fr:'outils', de:'Werkzeuge', tr:'araçlar', it:'strumenti', th:'เครื่องมือ', vi:'công cụ', pl:'narzędzia', nl:'gereedschappen', uk:'інструменти', id:'alat' }),
+  'detail.tokens': row('tokens', 'tokens'),
+
+  // ConfirmModal
+  'confirm.cancel': row('Cancel', '取消', { es:'Cancelar', ar:'إلغاء', hi:'रद्द करें', pt:'Cancelar', bn:'বাতিল', ru:'Отмена', ja:'キャンセル', ko:'취소', fr:'Annuler', de:'Abbrechen', tr:'İptal', it:'Annulla', th:'ยกเลิก', vi:'Hủy', pl:'Anuluj', nl:'Annuleren', uk:'Скасувати', id:'Batal' }),
+  'confirm.ok': row('Confirm', '确认', { es:'Confirmar', ar:'تأكيد', hi:'पुष्टि', pt:'Confirmar', bn:'নিশ্চিত', ru:'Подтвердить', ja:'確認', ko:'확인', fr:'Confirmer', de:'Bestätigen', tr:'Onayla', it:'Conferma', th:'ยืนยัน', vi:'Xác nhận', pl:'Potwierdź', nl:'Bevestigen', uk:'Підтвердити', id:'Konfirmasi' }),
+  'confirm.archive': row('Archive this session?', '归档此会话？', { es:'¿Archivar esta sesión?', ar:'أرشفة هذه الجلسة؟', hi:'इस सत्र को संग्रहित करें?', pt:'Arquivar esta sessão?', bn:'এই সেশন সংরক্ষণ করবেন?', ru:'Архивировать?', ja:'アーカイブしますか？', ko:'보관하시겠습니까?', fr:'Archiver ?', de:'Archivieren?', tr:'Arşivlensin mi?', it:'Archiviare?', th:'เก็บถาวร?', vi:'Lưu trữ?', pl:'Zarchiwizować?', nl:'Archiveren?', uk:'Архівувати?', id:'Arsipkan?' }),
+  'confirm.delete': row('Delete this session from index?', '从索引中删除此会话？', { es:'¿Eliminar esta sesión?', ar:'حذف هذه الجلسة؟', hi:'इस सत्र को हटाएं?', pt:'Excluir esta sessão?', bn:'এই সেশন মুছবেন?', ru:'Удалить?', ja:'削除しますか？', ko:'삭제하시겠습니까?', fr:'Supprimer ?', de:'Löschen?', tr:'Silinsin mi?', it:'Eliminare?', th:'ลบ?', vi:'Xóa?', pl:'Usunąć?', nl:'Verwijderen?', uk:'Видалити?', id:'Hapus?' }),
+
+  // Settings
+  'settings.title': row('Settings', '设置', { es:'Configuración', ar:'إعدادات', hi:'सेटिंग्स', pt:'Configurações', bn:'সেটিংস', ru:'Настройки', ja:'設定', ko:'설정', fr:'Paramètres', de:'Einstellungen', tr:'Ayarlar', it:'Impostazioni', th:'การตั้งค่า', vi:'Cài đặt', pl:'Ustawienia', nl:'Instellingen', uk:'Налаштування', id:'Pengaturan' }),
+  'settings.language': row('Language', '语言', { es:'Idioma', ar:'اللغة', hi:'भाषा', pt:'Idioma', bn:'ভাষা', ru:'Язык', ja:'言語', ko:'언어', fr:'Langue', de:'Sprache', tr:'Dil', it:'Lingua', th:'ภาษา', vi:'Ngôn ngữ', pl:'Język', nl:'Taal', uk:'Мова', id:'Bahasa' }),
+  'settings.resume': row('Resume Behavior', '恢复行为', { es:'Comportamiento de reanudación', ar:'سلوك الاستئناف', hi:'रिज़्यूम व्यवहार', pt:'Comportamento de retomada', bn:'রিজিউম আচরণ', ru:'Поведение возобновления', ja:'再開動作', ko:'재개 동작', fr:'Comportement de reprise', de:'Fortsetzungsverhalten', tr:'Devam etme davranışı', it:'Comportamento ripresa', th:'พฤติกรรมการดำเนินต่อ', vi:'Hành vi tiếp tục', pl:'Zachowanie wznawiania', nl:'Hervattingsgedrag', uk:'Поведінка відновлення', id:'Perilaku lanjutkan' }),
+  'settings.resume.system': row('System Terminal', '系统终端', { es:'Terminal del sistema', ar:'طرفية النظام', hi:'सिस्टम टर्मिनल', pt:'Terminal do sistema', bn:'সিস্টেম টার্মিনাল', ru:'Системный терминал', ja:'システムターミナル', ko:'시스템 터미널', fr:'Terminal système', de:'System-Terminal', tr:'Sistem terminali', it:'Terminale di sistema', th:'เทอร์มินัลระบบ', vi:'Terminal hệ thống', pl:'Terminal systemowy', nl:'Systeemterminal', uk:'Системний термінал', id:'Terminal sistem' }),
+  'settings.resume.builtin': row('Built-in Terminal', '内置终端', { es:'Terminal integrado', ar:'طرفية مدمجة', hi:'अंतर्निहित टर्मिनल', pt:'Terminal integrado', bn:'অন্তর্নির্মিত টার্মিনাল', ru:'Встроенный терминал', ja:'内蔵ターミナル', ko:'내장 터미널', fr:'Terminal intégré', de:'Integriertes Terminal', tr:'Dahili terminal', it:'Terminale integrato', th:'เทอร์มินัลในตัว', vi:'Terminal tích hợp', pl:'Wbudowany terminal', nl:'Ingebouwde terminal', uk:'Вбудований термінал', id:'Terminal bawaan' }),
+  'settings.resume.system.desc': row('Open session resume command in an external terminal', '在外部终端中打开会话恢复命令', { es:'Abrir comando en terminal externo', ar:'فتح في طرفية خارجية', hi:'बाहरी टर्मिनल में खोलें', pt:'Abrir em terminal externo', bn:'বাহ্যিক টার্মিনালে খুলুন', ru:'Открыть во внешнем терминале', ja:'外部ターミナルで開く', ko:'외부 터미널에서 열기', fr:'Ouvrir dans un terminal externe', de:'In externem Terminal öffnen', tr:'Harici terminalde aç', it:'Apri in terminale esterno', th:'เปิดในเทอร์มินัลภายนอก', vi:'Mở trong terminal ngoài', pl:'Otwórz w zewnętrznym terminalu', nl:'Openen in externe terminal', uk:'Відкрити у зовнішньому терміналі', id:'Buka di terminal eksternal' }),
+  'settings.resume.builtin.desc': row('Open in the terminal panel at the bottom of this app', '在应用底部的终端面板中打开', { es:'Abrir en el panel inferior', ar:'فتح في اللوحة السفلية', hi:'ऐप के निचले पैनल में खोलें', pt:'Abrir no painel inferior', bn:'অ্যাপের নিচের প্যানেলে খুলুন', ru:'Открыть во встроенной панели', ja:'アプリ下部のパネルで開く', ko:'앱 하단 패널에서 열기', fr:'Ouvrir dans le panneau inférieur', de:'Im unteren Panel öffnen', tr:'Alt panelde aç', it:'Apri nel pannello inferiore', th:'เปิดในแผงด้านล่าง', vi:'Mở trong bảng dưới cùng', pl:'Otwórz w dolnym panelu', nl:'Openen in onderste paneel', uk:'Відкрити в нижній панелі', id:'Buka di panel bawah' }),
+  'settings.terminal': row('Terminal Application', '终端应用', { es:'Aplicación de terminal', ar:'تطبيق الطرفية', hi:'टर्मिनल एप्लिकेशन', pt:'Aplicativo de terminal', bn:'টার্মিনাল অ্যাপ', ru:'Приложение терминала', ja:'ターミナルアプリ', ko:'터미널 앱', fr:'Application terminal', de:'Terminal-App', tr:'Terminal uygulaması', it:'App terminale', th:'แอปเทอร์มินัล', vi:'Ứng dụng terminal', pl:'Aplikacja terminala', nl:'Terminal-app', uk:'Додаток терміналу', id:'Aplikasi terminal' }),
+  'settings.terminal.defaultDesc': row('Uses macOS default handler for .command files', '使用 macOS 默认的 .command 文件处理程序', { es:'Usa el controlador predeterminado de macOS', ar:'يستخدم المعالج الافتراضي لـ macOS', hi:'macOS डिफ़ॉल्ट हैंडलर', pt:'Usa o padrão do macOS', bn:'macOS ডিফল্ট ব্যবহার করে', ru:'Использовать macOS по умолчанию', ja:'macOSデフォルトを使用', ko:'macOS 기본 사용', fr:'Utilise le gestionnaire macOS par défaut', de:'macOS-Standard verwenden', tr:'macOS varsayılanını kullan', it:'Usa gestore predefinito macOS', th:'ใช้ค่าเริ่มต้นของ macOS', vi:'Dùng trình xử lý mặc định macOS', pl:'Użyj domyślnej obsługi macOS', nl:'macOS-standaard gebruiken', uk:'Використати типовий обробник macOS', id:'Gunakan penanganan bawaan macOS' }),
+  'settings.terminal.with': row('Will open with', '将使用', { es:'Se abrirá con', ar:'سيفتح بـ', hi:'इससे खोलेंगे', pt:'Abrirá com', bn:'এটি দিয়ে খুলবে', ru:'Открыть в', ja:'以下で開く', ko:'다음으로 열기', fr:'S\'ouvrira avec', de:'Öffnen mit', tr:'Şununla açılacak', it:'Si aprirà con', th:'เปิดด้วย', vi:'Mở bằng', pl:'Otworzy w', nl:'Opent met', uk:'Відкрити у', id:'Akan dibuka dengan' }),
+}
+
+export type TranslationKey = keyof typeof t
+
+export function translate(key: TranslationKey, lang: Lang): string {
+  return t[key]?.[lang] ?? t[key]?.['en'] ?? key
+}

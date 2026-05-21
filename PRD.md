@@ -163,6 +163,56 @@ CREATE VIRTUAL TABLE session_fts USING fts5(
 
 ---
 
+## V1.1 UI 品质升级
+
+基于与 [cc-switch](https://github.com/farion1231/cc-switch) 的对比分析（详见 `docs/ui-comparison-cc-switch.md`），对 V1 的 UI 进行品质升级，目标是达到同等水平的视觉层次感和交互流畅度。
+
+### U1: 启用 Tailwind CSS + 迁移行内样式
+
+将所有 `style={{}}` 行内样式迁移为 Tailwind className，利用已有的 CSS 变量体系。引入 `cn()` 工具函数（clsx + tailwind-merge）实现条件样式组合。
+
+### U2: 引入 framer-motion 动画
+
+- 用 `AnimatePresence` + `motion.div` 替换现有 CSS `@keyframes` 视图切换动画
+- 为列表项、卡片、弹窗添加 mount/unmount 过渡动画
+- 为交互元素添加 hover/press 微动效
+
+### U3: 视觉效果升级
+
+- CSS 变量从 Hex 迁移到 HSL 格式（便于透明度调节）
+- 卡片/面板加入毛玻璃效果（`backdrop-filter: blur`）
+- 添加带色彩的阴影（如 `shadow-{color}/30`）
+- 统一圆角规范（`rounded-xl` 卡片，`rounded-full` 按钮）
+- 边框改用半透明/渐变样式
+
+### U4: 引入 lucide-react 图标库
+
+替换所有内联 SVG 和 emoji 图标为 lucide-react 组件，统一图标风格。
+
+### U5: 引入 shadcn/ui 组件库（按需）
+
+优先引入高频使用的组件：
+- Dialog（替换自定义确认弹窗）
+- DropdownMenu（替换自定义右键菜单）
+- Tooltip（操作提示）
+- sonner（Toast 通知，替代当前无反馈状态）
+
+### 技术依赖新增
+
+```
+framer-motion
+lucide-react
+clsx
+tailwind-merge
+@radix-ui/react-dialog
+@radix-ui/react-dropdown-menu
+@radix-ui/react-tooltip
+sonner
+class-variance-authority
+```
+
+---
+
 ## V2 功能（后续迭代）
 
 - 半自动任务归组（AI 建议合并相关 session，用户确认）

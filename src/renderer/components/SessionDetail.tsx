@@ -1,6 +1,10 @@
-import { useState } from 'react'
+import { memo, useCallback, useMemo, useState } from 'react'
+import { ArrowLeft, Star, Pin, Archive, Trash2, Play, ChevronDown, ChevronUp } from 'lucide-react'
+import { Virtuoso } from 'react-virtuoso'
 import { useStore, ChatMessage } from '../stores/useStore'
 import { ToolIcon } from './Sidebar'
+import { cn } from '../lib/utils'
+import { translate } from '../lib/i18n'
 
 const COLLAPSE_LEN = 300
 
@@ -10,87 +14,83 @@ const TOOL_ICONS: Record<string, string> = {
   skill: '🛠️', list: '📁', mkdir: '📁'
 }
 
-function CollapsibleContent({ content, mono = false }: { content: string; mono?: boolean }) {
+const CollapsibleContent = memo(function CollapsibleContent({ content, mono = false, lang }: { content: string; mono?: boolean; lang: string }) {
   const [expanded, setExpanded] = useState(false)
   const needsCollapse = content.length > COLLAPSE_LEN
 
   return (
     <div>
-      <div style={{
-        whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6,
-        fontFamily: mono ? 'var(--font-mono)' : 'inherit',
-        fontSize: mono ? 11 : 12,
-        maxHeight: needsCollapse && !expanded ? 120 : 'none', overflow: 'hidden'
-      }}>
+      <div
+        className={cn(
+          'whitespace-pre-wrap break-words leading-relaxed',
+          mono ? 'font-mono text-[11px]' : 'text-xs'
+        )}
+        style={{ maxHeight: needsCollapse && !expanded ? 120 : 'none', overflow: 'hidden' }}
+      >
         {needsCollapse && !expanded ? content.slice(0, COLLAPSE_LEN) + '...' : content}
       </div>
       {needsCollapse && (
         <button
           onClick={() => setExpanded(!expanded)}
-          style={{
-            background: 'none', border: 'none', color: 'var(--accent)',
-            cursor: 'pointer', fontSize: 10, padding: '2px 0', marginTop: 2
-          }}
+          className="mt-0.5 flex cursor-pointer items-center gap-0.5 bg-transparent text-[10px] text-primary"
         >
-          {expanded ? '▲ Show less' : `▼ Show all (${content.length} chars)`}
+          {expanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+          {expanded ? translate('detail.showLess', lang as any) : `${translate('detail.showAll', lang as any)} (${content.length} ${translate('detail.chars', lang as any)})`}
         </button>
       )}
     </div>
   )
-}
+})
 
-function MessageBubble({ msg }: { msg: ChatMessage }) {
+const MessageBubble = memo(function MessageBubble({ msg, index, lang }: { msg: ChatMessage; index: number; lang: string }) {
   const isUser = msg.role === 'user'
   const isTool = msg.type === 'tool'
 
   if (isTool) {
     const icon = TOOL_ICONS[msg.toolName?.toLowerCase() || ''] || '🔧'
     return (
-      <div style={{
-        margin: '0 24px 10px', padding: '8px 12px', borderRadius: 8,
-        background: 'var(--bg-card)', border: '1px solid var(--border)',
-        borderLeft: '3px solid var(--accent)', fontSize: 11
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-          <span style={{ fontSize: 13 }}>{icon}</span>
-          <span style={{
-            fontWeight: 600, color: 'var(--accent)', fontSize: 10,
-            textTransform: 'uppercase', letterSpacing: 0.5
-          }}>
-            {msg.toolName || 'Tool Call'}
+      <div
+        className="mx-6 mb-4 rounded-lg border border-border/50 bg-card/60 px-4 py-3.5 text-[11px] backdrop-blur-sm"
+        style={{ borderLeft: '3px solid hsl(var(--primary))' }}
+      >
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <span className="text-[13px]">{icon}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+            {msg.toolName || translate('detail.toolCall', lang as any)}
           </span>
         </div>
-        <CollapsibleContent content={msg.content} mono />
+        <CollapsibleContent content={msg.content} mono lang={lang} />
       </div>
     )
   }
 
   return (
-    <div style={{
-      marginBottom: 10, display: 'flex', flexDirection: 'column',
-      alignItems: isUser ? 'flex-end' : 'flex-start', padding: '0 24px'
-    }}>
-      <div style={{
-        maxWidth: '82%', padding: '10px 14px',
-        borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-        background: isUser ? 'var(--bg-card)' : 'var(--bg-hover)',
-        border: isUser ? '1px solid var(--border)' : 'none',
-        borderLeft: isUser ? 'none' : '2px solid var(--accent)',
-        borderRight: isUser ? '2px solid var(--accent)' : 'none'
-      }}>
-        <div style={{
-          fontSize: 10, marginBottom: 4, fontWeight: 600,
-          color: isUser ? 'var(--accent)' : 'var(--text-muted)',
-          paddingBottom: 4,
-          borderBottom: isUser ? '1px solid var(--border-soft)' : 'none'
-        }}>
-          {isUser ? 'You' : 'AI'}
+    <div
+      className={cn('mb-4 flex flex-col px-6', isUser ? 'items-end' : 'items-start')}
+    >
+      <div
+        className={cn(
+          'max-w-[82%] rounded-2xl px-5 py-3.5',
+          isUser
+            ? 'rounded-br-sm border border-border/50 bg-card/60 backdrop-blur-sm'
+            : 'bg-hover/60 backdrop-blur-sm'
+        )}
+        style={{
+          borderLeft: isUser ? 'none' : '2px solid hsl(var(--primary))',
+          borderRight: isUser ? '2px solid hsl(var(--primary))' : 'none',
+        }}
+      >
+        <div className={cn(
+          'mb-1 border-b pb-1 text-[10px] font-semibold',
+          isUser ? 'border-border-soft text-primary' : 'border-transparent text-foreground-muted'
+        )}>
+          {isUser ? translate('detail.you', lang as any) : translate('detail.ai', lang as any)}
         </div>
-        <CollapsibleContent content={msg.content} />
+        <CollapsibleContent content={msg.content} lang={lang} />
       </div>
     </div>
   )
-}
+})
 
 function formatTokens(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
@@ -104,20 +104,33 @@ function formatCost(n: number): string {
 }
 
 export function SessionDetail() {
-  const { detailSession, detailMessages, detailLoading, closeDetail, toggleStar, togglePin, toggleArchive, deleteSession, resumeSession, resumeAction, terminalApp } = useStore()
+  const detailSession = useStore(s => s.detailSession)
+  const detailMessages = useStore(s => s.detailMessages)
+  const detailLoading = useStore(s => s.detailLoading)
+  const closeDetail = useStore(s => s.closeDetail)
+  const toggleStar = useStore(s => s.toggleStar)
+  const togglePin = useStore(s => s.togglePin)
+  const toggleArchive = useStore(s => s.toggleArchive)
+  const deleteSession = useStore(s => s.deleteSession)
+  const resumeSession = useStore(s => s.resumeSession)
+  const resumeAction = useStore(s => s.resumeAction)
+  const terminalApp = useStore(s => s.terminalApp)
+  const lang = useStore(s => s.language)
+
+  const textCount = useMemo(() => detailMessages.filter(m => m.type === 'text').length, [detailMessages])
+  const toolCount = useMemo(() => detailMessages.filter(m => m.type === 'tool').length, [detailMessages])
+
+  const handleConfirm = useCallback(async (message: string, action: () => void) => {
+    const ok = await useStore.getState().confirm(message)
+    if (ok) action()
+  }, [])
 
   if (!detailSession) return null
 
   const s = detailSession
 
-  const handleConfirm = async (message: string, action: () => void) => {
-    const ok = await useStore.getState().confirm(message)
-    if (ok) action()
-  }
-  const toolColor = s.tool === 'opencode' ? 'var(--accent-opencode)' : s.tool === 'claude' ? 'var(--accent-claude)' : 'var(--accent-codex)'
-  const toolBgColor = s.tool === 'opencode' ? 'var(--accent-opencode-bg)' : s.tool === 'claude' ? 'var(--accent-claude-bg)' : 'var(--accent-codex-bg)'
-  const textCount = detailMessages.filter(m => m.type === 'text').length
-  const toolCount = detailMessages.filter(m => m.type === 'tool').length
+  const toolColor = s.tool === 'opencode' ? 'accent-opencode' : s.tool === 'claude' ? 'accent-claude' : 'accent-codex'
+  const toolBgColor = s.tool === 'opencode' ? 'accent-opencode-bg' : s.tool === 'claude' ? 'accent-claude-bg' : 'accent-codex-bg'
 
   const handleResume = () => {
     const cmd = s.tool === 'opencode'
@@ -134,154 +147,120 @@ export function SessionDetail() {
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-      <div style={{
-        padding: '12px 20px', borderBottom: '1px solid var(--border)',
-        background: 'var(--bg-secondary)', flexShrink: 0
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div className="flex flex-1 flex-col overflow-hidden bg-background">
+      {/* Header */}
+      <div className="shrink-0 border-b border-border bg-background-secondary/80 px-5 py-4 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
           <button
             onClick={closeDetail}
-            style={{
-              background: 'none', border: 'none', color: 'var(--accent)',
-              cursor: 'pointer', fontSize: 14, padding: '4px 8px', borderRadius: 4
-            }}
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-border/50 bg-hover/50 px-3 py-1.5 text-xs text-foreground-secondary transition-all hover:border-primary hover:bg-primary hover:text-white"
           >
-            ← Back
+            <ArrowLeft size={12} />
+            {translate('detail.back', lang as any)}
           </button>
 
-          <div style={{
-            width: 28, height: 28, borderRadius: 7,
-            background: toolBgColor,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-          }}>
+          <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', `bg-${toolBgColor}`)}>
             <ToolIcon tool={s.tool} size={17} />
           </div>
 
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 14, fontWeight: 600, color: 'var(--text-primary)',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-            }}>
-              {s.title || 'Untitled Session'}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-foreground">
+              {s.title || translate('detail.untitled', lang as any)}
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className="flex items-center gap-1">
             <button
               onClick={() => toggleStar(s.id)}
-              title={s.starred ? 'Unstar' : 'Star'}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: 5, borderRadius: 4, display: 'flex', alignItems: 'center',
-                color: s.starred ? '#fbbf24' : 'var(--text-muted)'
-              }}
+              title={s.starred ? translate('detail.star', lang as any) : translate('detail.unstar', lang as any)}
+              className={cn(
+                'flex cursor-pointer items-center justify-center rounded-md p-1.5 transition-all active:scale-90 hover:[transform:rotateY(180deg)] [transform-style:preserve-3d] duration-300',
+                s.starred
+                  ? 'bg-orange/15 text-orange'
+                  : 'text-foreground-muted hover:bg-hover hover:text-foreground'
+              )}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill={s.starred ? '#fbbf24' : 'none'} stroke="currentColor" strokeWidth="1.8">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
+              <Star size={14} fill={s.starred ? 'currentColor' : 'none'} />
             </button>
             <button
               onClick={() => togglePin(s.id)}
-              title={s.pinned ? 'Unpin' : 'Pin'}
-              style={{
-                background: s.pinned ? 'var(--bg-hover)' : 'none',
-                border: s.pinned ? '1px solid var(--border)' : 'none',
-                cursor: 'pointer', padding: s.pinned ? 4 : 5, borderRadius: 4,
-                display: 'flex', alignItems: 'center',
-                color: s.pinned ? 'var(--accent)' : 'var(--text-muted)'
-              }}
+              title={s.pinned ? translate('detail.pin', lang as any) : translate('detail.unpin', lang as any)}
+              className={cn(
+                'flex cursor-pointer items-center justify-center rounded-md p-1.5 transition-all active:scale-90 hover:[transform:rotateY(180deg)] [transform-style:preserve-3d] duration-300',
+                s.pinned
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-foreground-muted hover:bg-hover hover:text-foreground'
+              )}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
-              </svg>
+              <Pin size={14} fill={s.pinned ? 'currentColor' : 'none'} />
             </button>
             <button
-              onClick={() => handleConfirm('Archive this session? It will be hidden from the main list.', () => toggleArchive(s.id))}
-              title="Archive"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: 5, borderRadius: 4, display: 'flex', alignItems: 'center',
-                color: 'var(--text-muted)'
-              }}
+              onClick={() => handleConfirm(translate('detail.confirm.archive', lang as any), () => toggleArchive(s.id))}
+              title={translate('detail.archive', lang as any)}
+              className="flex cursor-pointer items-center justify-center rounded-md p-1.5 text-foreground-muted transition-all hover:bg-hover hover:text-foreground active:scale-90 hover:[transform:rotateY(180deg)] [transform-style:preserve-3d] duration-300"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <rect x="3" y="7" width="18" height="14" rx="2" />
-                <path d="M3 11h18" />
-                <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
-              </svg>
+              <Archive size={14} />
             </button>
             <button
-              onClick={() => handleConfirm('Permanently delete this session from the index?', () => deleteSession(s.id))}
-              title="Delete"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: 5, borderRadius: 4, display: 'flex', alignItems: 'center',
-                color: '#f87171'
-              }}
+              onClick={() => handleConfirm(translate('detail.confirm.delete', lang as any), () => deleteSession(s.id))}
+              title={translate('detail.delete', lang as any)}
+              className="flex cursor-pointer items-center justify-center rounded-md p-1.5 text-foreground-muted transition-all hover:bg-hover hover:text-foreground active:scale-90 hover:[transform:rotateY(180deg)] [transform-style:preserve-3d] duration-300"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M3 6h18" />
-                <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                <path d="M10 11v6" /><path d="M14 11v6" />
-              </svg>
+              <Trash2 size={14} />
             </button>
           </div>
 
           <button
             onClick={handleResume}
-            style={{
-              background: toolColor, border: 'none', cursor: 'pointer',
-              fontSize: 12, color: '#fff', padding: '6px 14px', borderRadius: 6, fontWeight: 500,
-              marginLeft: 6
-            }}
+            className={cn(
+              'ml-2 flex cursor-pointer items-center gap-1.5 rounded-lg border border-border/50 bg-hover/50 px-3 py-2 text-[11px] text-foreground-secondary transition-all duration-150 hover:border-primary hover:bg-primary hover:text-white',
+            )}
           >
-            ▶ Resume
+            <Play size={9} />
+            {translate('detail.resume', lang as any)}
           </button>
         </div>
 
-        <div style={{
-          display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10,
-          marginLeft: 52
-        }}>
+        {/* Metadata pills */}
+        <div className="ml-[52px] mt-3 flex flex-wrap gap-2">
           {s.projectName && (
-            <span style={{
-              fontSize: 10, padding: '2px 8px', borderRadius: 4,
-              background: 'var(--bg-hover)', color: 'var(--accent)',
-              maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-            }}>{s.projectName}</span>
+            <span className="max-w-[180px] truncate rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-primary">{s.projectName}</span>
           )}
           {s.model && (
-            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>{s.model}</span>
+            <span className="rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-foreground-secondary">{s.model}</span>
           )}
           {s.gitBranch && (
-            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>{s.gitBranch}</span>
+            <span className="rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-foreground-secondary">{s.gitBranch}</span>
           )}
-          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>{textCount} msgs</span>
+          <span className="rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-foreground-secondary">{textCount} {translate('detail.msgs', lang as any)}</span>
           {toolCount > 0 && (
-            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>{toolCount} tools</span>
+            <span className="rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-foreground-secondary">{toolCount} {translate('detail.tools', lang as any)}</span>
           )}
           {s.tokensTotal > 0 && (
-            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--bg-hover)', color: 'var(--accent)' }}>{formatTokens(s.tokensTotal)} tokens</span>
+            <span className="rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-primary">{formatTokens(s.tokensTotal)} {translate('detail.tokens', lang as any)}</span>
           )}
           {s.cost > 0 && (
-            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--bg-hover)', color: 'var(--orange)' }}>{formatCost(s.cost)}</span>
+            <span className="rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-orange">{formatCost(s.cost)}</span>
           )}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
+      {/* Messages */}
+      <div className="flex-1 overflow-hidden">
         {detailLoading ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>
-            Loading messages...
-          </div>
+          <div className="px-10 py-10 text-center text-foreground-muted">{translate('detail.loading', lang as any)}</div>
         ) : detailMessages.length === 0 ? (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40, fontSize: 13 }}>
-            No messages found for this session
-          </div>
+          <div className="px-10 py-10 text-center text-[13px] text-foreground-muted">{translate('detail.noMessages', lang as any)}</div>
         ) : (
-          detailMessages.map((msg, i) => <MessageBubble key={i} msg={msg} />)
+          <Virtuoso
+            data={detailMessages}
+            initialTopMostItemIndex={0}
+            itemContent={(index, msg) => <MessageBubble msg={msg} index={index} lang={lang} />}
+            components={{
+              Header: () => <div style={{ height: 24 }} />,
+              Footer: () => <div style={{ height: 24 }} />,
+            }}
+          />
         )}
       </div>
     </div>

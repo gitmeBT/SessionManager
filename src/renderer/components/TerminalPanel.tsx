@@ -34,7 +34,8 @@ function TerminalInstance({ tabId }: { tabId: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
-  const { activeTabId, theme } = useStore()
+  const activeTabId = useStore(s => s.activeTabId)
+  const theme = useStore(s => s.theme)
   const isActive = activeTabId === tabId
   const isLight = theme === 'light'
 
@@ -139,7 +140,12 @@ function TerminalInstance({ tabId }: { tabId: string }) {
 }
 
 export function TerminalPanel({ fullscreen = false }: { fullscreen?: boolean }) {
-  const { terminalTabs, activeTabId, setActiveTab, closeTab, spawnTerminal, setTerminalFullscreen } = useStore()
+  const terminalTabs = useStore(s => s.terminalTabs)
+  const activeTabId = useStore(s => s.activeTabId)
+  const setActiveTab = useStore(s => s.setActiveTab)
+  const closeTab = useStore(s => s.closeTab)
+  const spawnTerminal = useStore(s => s.spawnTerminal)
+  const setTerminalFullscreen = useStore(s => s.setTerminalFullscreen)
 
   useEffect(() => {
     if (!fullscreen) return
@@ -208,7 +214,9 @@ export function TerminalPanel({ fullscreen = false }: { fullscreen?: boolean }) 
       </div>
 
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        {terminalTabs.map(tab => <TerminalInstance key={tab.id} tabId={tab.id} />)}
+        {terminalTabs
+          .filter(tab => tab.id === activeTabId)
+          .map(tab => <TerminalInstance key={tab.id} tabId={tab.id} />)}
       </div>
     </div>
   )

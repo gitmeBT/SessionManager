@@ -1,56 +1,35 @@
-import { createPortal } from 'react-dom'
+import * as Dialog from '@radix-ui/react-dialog'
 import { useStore } from '../stores/useStore'
+import { translate } from '../lib/i18n'
 
 export function ConfirmModal() {
-  const { confirmDialog, setConfirmDialog } = useStore()
-  if (!confirmDialog) return null
+  const confirmDialog = useStore(s => s.confirmDialog)
+  const setConfirmDialog = useStore(s => s.setConfirmDialog)
+  const lang = useStore(s => s.language)
 
-  return createPortal(
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 10000,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.5)'
-    }}
-      onClick={() => setConfirmDialog(null)}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: 'var(--bg-card)', border: '1px solid var(--border)',
-          borderRadius: 10, padding: '20px 24px', minWidth: 280, maxWidth: 380,
-          boxShadow: '0 12px 40px rgba(0,0,0,0.4)'
-        }}
-      >
-        <div style={{
-          fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5,
-          marginBottom: 20
-        }}>
-          {confirmDialog.message}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button
-            onClick={() => setConfirmDialog(null)}
-            style={{
-              padding: '6px 16px', fontSize: 12, borderRadius: 6,
-              border: '1px solid var(--border)', background: 'var(--bg-hover)',
-              color: 'var(--text-secondary)', cursor: 'pointer'
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={confirmDialog.onConfirm}
-            style={{
-              padding: '6px 16px', fontSize: 12, borderRadius: 6,
-              border: 'none', background: '#f87171', color: '#fff',
-              cursor: 'pointer', fontWeight: 500
-            }}
-          >
-            Confirm
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+  return (
+    <Dialog.Root open={!!confirmDialog} onOpenChange={(open) => { if (!open) setConfirmDialog(null) }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[10000] bg-black/50 backdrop-blur-sm" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-[10000] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border bg-card/95 p-6 shadow-2xl backdrop-blur-xl focus:outline-none">
+          <Dialog.Description className="mb-5 text-[13px] leading-relaxed text-foreground">
+            {confirmDialog?.message}
+          </Dialog.Description>
+          <div className="flex justify-end gap-2">
+            <Dialog.Close asChild>
+              <button className="cursor-pointer rounded-lg border border-border bg-hover px-4 py-1.5 text-xs text-foreground-secondary transition-colors hover:text-foreground">
+                {translate('confirm.cancel', lang)}
+              </button>
+            </Dialog.Close>
+            <button
+              onClick={confirmDialog?.onConfirm}
+              className="cursor-pointer rounded-lg bg-danger px-4 py-1.5 text-xs font-medium text-white shadow-md shadow-danger/25 transition-all hover:shadow-lg hover:shadow-danger/30"
+            >
+              {translate('confirm.ok', lang)}
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }

@@ -3,3 +3,7 @@ out/
 dist/
 *.log
 .DS_Store
+icon-preview*.html
+icon-copy.png
+icon copy.png
+build/.DS_Store

@@ -5,6 +5,10 @@ import { Indexer } from './indexer'
 import { PtyManager } from './pty-manager'
 import { registerIpcHandlers } from './ipc-handlers'
 
+if (process.env.ELECTRON_RENDERER_URL) {
+  app.commandLine.appendSwitch('remote-debugging-port', '9222')
+}
+
 const mainWindowRef = { current: null as BrowserWindow | null }
 let db: DatabaseManager
 let indexer: Indexer
