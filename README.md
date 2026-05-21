@@ -1,6 +1,10 @@
-# SessionManager
+<div align="center">
+  <img src="docs/icon.png" width="128" height="128" alt="SessionManager Icon">
 
-A macOS desktop app that unifies session management for AI coding agents — find, browse, and resume sessions from OpenCode, Claude Code, and Codex in one place.
+  # SessionManager
+
+  A macOS desktop app that unifies session management for AI coding agents — find, browse, and resume sessions from OpenCode, Claude Code, and Codex in one place.
+</div>
 
 ## Features
 
