@@ -44,15 +44,20 @@ app.whenReady().then(async () => {
   db.initialize()
 
   indexer = new Indexer(db)
-  await indexer.indexAll()
-
   ptyManager = new PtyManager()
 
   createWindow()
   registerIpcHandlers(db, indexer, ptyManager, mainWindowRef)
 
+  // Initial index in background so window opens immediately
+  indexer.indexAll().then(() => {
+    mainWindowRef.current?.webContents.send('index-ready')
+  })
+
   setInterval(() => {
-    indexer.indexAll()
+    indexer.indexAll().then(() => {
+      mainWindowRef.current?.webContents.send('index-ready')
+    })
   }, 5 * 60 * 1000)
 
   app.on('activate', () => {

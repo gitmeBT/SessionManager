@@ -12,6 +12,7 @@ import { ConfirmModal } from './components/ConfirmModal'
 export function App() {
   const loadSessions = useStore(s => s.loadSessions)
   const loadProjectNames = useStore(s => s.loadProjectNames)
+  const loadInstalledTerminals = useStore(s => s.loadInstalledTerminals)
   const showTerminal = useStore(s => s.showTerminal)
   const terminalFullscreen = useStore(s => s.terminalFullscreen)
   const theme = useStore(s => s.theme)
@@ -24,6 +25,13 @@ export function App() {
   useEffect(() => {
     loadSessions()
     loadProjectNames()
+    loadInstalledTerminals()
+
+    const unsub = window.api.onIndexReady(() => {
+      loadSessions()
+      loadProjectNames()
+    })
+    return unsub
   }, [])
 
   return (

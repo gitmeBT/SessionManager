@@ -32,6 +32,8 @@ export class DatabaseManager {
         updated_at INTEGER,
         is_active INTEGER DEFAULT 0,
         starred INTEGER DEFAULT 0,
+        archived INTEGER DEFAULT 0,
+        pinned INTEGER DEFAULT 0,
         tags TEXT,
         indexed_at INTEGER
       );

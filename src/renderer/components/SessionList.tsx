@@ -166,6 +166,7 @@ function getTimeGroup(ts: number | null): string {
 
 export function SessionList() {
   const sessions = useStore(s => s.sessions)
+  const loading = useStore(s => s.loading)
   const searchQuery = useStore(s => s.searchQuery)
   const setSearch = useStore(s => s.setSearch)
   const sortBy = useStore(s => s.sortBy)
@@ -285,7 +286,12 @@ export function SessionList() {
 
       {/* Session list */}
       <div className="flex-1 overflow-hidden">
-        {sortedSessions.length === 0 ? (
+        {loading && sortedSessions.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-xs text-foreground-muted">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
+            {translate('list.loading', lang)}
+          </div>
+        ) : sortedSessions.length === 0 ? (
           <div className="px-5 py-10 text-center text-xs text-foreground-muted">
             {translate('list.noSessions', lang)}
           </div>

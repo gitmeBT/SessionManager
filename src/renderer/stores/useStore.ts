@@ -28,6 +28,7 @@ declare global {
       deleteSession: (sessionId: string) => Promise<boolean>
       updateTags: (sessionId: string, tags: string) => Promise<void>
       refreshIndex: () => Promise<boolean>
+      getInstalledTerminals: () => Promise<string[]>
       getSessionMessages: (session: UnifiedSession) => Promise<ChatMessage[]>
       resumeSession: (session: UnifiedSession) => Promise<{ tabId: string; command: string }>
       openSystemTerminal: (command: string, cwd?: string, terminalApp?: string) => Promise<boolean>
@@ -37,6 +38,7 @@ declare global {
       ptyKill: (tabId: string) => Promise<void>
       onPtyData: (cb: (data: { tabId: string; data: string }) => void) => () => void
       onPtyExit: (cb: (data: { tabId: string; exitCode: number }) => void) => () => void
+      onIndexReady: (cb: () => void) => () => void
     }
   }
 }
@@ -65,6 +67,7 @@ interface AppState {
   theme: 'dark' | 'light'
   resumeAction: 'system' | 'builtin'
   terminalApp: string
+  installedTerminals: string[]
   showSettings: boolean
   confirmDialog: { message: string; onConfirm: () => void } | null
   language: Lang
@@ -90,6 +93,7 @@ interface AppState {
   toggleTheme: () => void
   setResumeAction: (v: 'system' | 'builtin') => void
   setTerminalApp: (v: string) => void
+  loadInstalledTerminals: () => Promise<void>
   setShowSettings: (v: boolean) => void
   setConfirmDialog: (v: { message: string; onConfirm: () => void } | null) => void
   confirm: (message: string) => Promise<boolean>
@@ -120,6 +124,7 @@ export const useStore = create<AppState>((set, get) => ({
   theme: (localStorage.getItem('theme') as 'dark' | 'light') || 'dark',
   resumeAction: (localStorage.getItem('resumeAction') as 'system' | 'builtin') || 'system',
   terminalApp: localStorage.getItem('terminalApp') || '',
+  installedTerminals: [],
   showSettings: false,
   confirmDialog: null,
   language: (localStorage.getItem('language') as Lang) || 'en',
@@ -308,6 +313,11 @@ export const useStore = create<AppState>((set, get) => ({
   setTerminalApp: (v: string) => {
     set({ terminalApp: v })
     localStorage.setItem('terminalApp', v)
+  },
+
+  loadInstalledTerminals: async () => {
+    const terminals = await window.api.getInstalledTerminals()
+    set({ installedTerminals: terminals })
   },
 
   setShowSettings: (v: boolean) => {

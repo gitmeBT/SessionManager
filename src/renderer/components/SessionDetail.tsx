@@ -283,7 +283,7 @@ export function SessionDetail() {
             key={reverseOrder ? 'rev' : 'fwd'}
             ref={virtuosoRef}
             data={displayMessages}
-            initialTopMostItemIndex={reverseOrder ? displayMessages.length - 1 : 0}
+            initialTopMostItemIndex={0}
             itemContent={(index, msg) => <MessageBubble msg={msg} index={index} lang={lang} />}
             components={{
               Header: () => <div style={{ height: 24 }} />,

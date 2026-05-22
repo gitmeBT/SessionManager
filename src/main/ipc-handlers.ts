@@ -6,6 +6,7 @@ import { UnifiedSession } from '../shared/types'
 import { getOpencodeMessages } from './indexer/opencode'
 import { getClaudeMessages } from './indexer/claude'
 import { getCodexMessages } from './indexer/codex'
+import { scanTerminals } from './terminal-scanner'
 
 export function registerIpcHandlers(
   db: DatabaseManager,
@@ -115,6 +116,10 @@ export function registerIpcHandlers(
   ipcMain.handle('refresh-index', async () => {
     await indexer.indexAll()
     return true
+  })
+
+  ipcMain.handle('get-installed-terminals', () => {
+    return scanTerminals()
   })
 
   ipcMain.handle('resume-session', async (_e, session: UnifiedSession) => {

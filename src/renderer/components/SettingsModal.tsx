@@ -5,16 +5,6 @@ import { useStore } from '../stores/useStore'
 import { cn } from '../lib/utils'
 import { translate, LANGUAGES, Lang } from '../lib/i18n'
 
-const TERMINAL_OPTIONS = [
-  { value: '', label: 'System Default' },
-  { value: 'Warp', label: 'Warp' },
-  { value: 'iTerm', label: 'iTerm2' },
-  { value: 'Terminal', label: 'Terminal.app' },
-  { value: 'Alacritty', label: 'Alacritty' },
-  { value: 'Hyper', label: 'Hyper' },
-  { value: 'kitty', label: 'kitty' },
-]
-
 function CustomSelect({ value, onChange, options }: {
   value: string
   onChange: (v: string) => void
@@ -74,6 +64,7 @@ export function SettingsModal() {
   const setResumeAction = useStore(s => s.setResumeAction)
   const terminalApp = useStore(s => s.terminalApp)
   const setTerminalApp = useStore(s => s.setTerminalApp)
+  const installedTerminals = useStore(s => s.installedTerminals)
   const language = useStore(s => s.language)
   const setLanguage = useStore(s => s.setLanguage)
 
@@ -130,7 +121,10 @@ export function SettingsModal() {
                 <CustomSelect
                   value={terminalApp}
                   onChange={setTerminalApp}
-                  options={TERMINAL_OPTIONS}
+                  options={[
+                    { value: '', label: translate('settings.terminal.systemDefault', language) },
+                    ...installedTerminals.map(t => ({ value: t, label: t }))
+                  ]}
                 />
                 <div className="mt-1.5 text-[10px] text-foreground-muted">
                   {terminalApp

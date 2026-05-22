@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
   deleteSession: (sessionId: string) => ipcRenderer.invoke('delete-session', sessionId),
   updateTags: (sessionId: string, tags: string) => ipcRenderer.invoke('update-tags', sessionId, tags),
   refreshIndex: () => ipcRenderer.invoke('refresh-index'),
+  getInstalledTerminals: () => ipcRenderer.invoke('get-installed-terminals'),
   getSessionMessages: (session: unknown) => ipcRenderer.invoke('get-session-messages', session),
 
   resumeSession: (session: unknown) => ipcRenderer.invoke('resume-session', session),
@@ -36,5 +37,11 @@ contextBridge.exposeInMainWorld('api', {
     const handler = (_e: unknown, d: unknown) => cb(d as { tabId: string; exitCode: number })
     ipcRenderer.on('pty-exit', handler)
     return () => ipcRenderer.removeListener('pty-exit', handler)
+  },
+
+  onIndexReady: (cb: () => void) => {
+    const handler = () => cb()
+    ipcRenderer.on('index-ready', handler)
+    return () => ipcRenderer.removeListener('index-ready', handler)
   }
 })
