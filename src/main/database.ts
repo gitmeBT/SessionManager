@@ -49,6 +49,8 @@ export class DatabaseManager {
       CREATE INDEX IF NOT EXISTS idx_session_project ON unified_session(project_name);
       CREATE INDEX IF NOT EXISTS idx_session_updated ON unified_session(updated_at);
       CREATE INDEX IF NOT EXISTS idx_session_starred ON unified_session(starred);
+      CREATE INDEX IF NOT EXISTS idx_session_archived ON unified_session(archived);
+      CREATE INDEX IF NOT EXISTS idx_session_pinned ON unified_session(pinned);
       CREATE INDEX IF NOT EXISTS idx_msg_session ON session_message_preview(session_id);
 
       CREATE VIRTUAL TABLE IF NOT EXISTS session_fts USING fts5(
@@ -254,14 +256,12 @@ export class DatabaseManager {
   getCounts(): { byTool: Record<string, number>, byProject: Record<string, number>, total: number } {
     const byTool: Record<string, number> = {}
     const byProject: Record<string, number> = {}
-    const rows = this.db.prepare('SELECT tool, project_name FROM unified_session WHERE archived = 0').all() as Array<{ tool: string; project_name: string | null }>
-    for (const r of rows) {
-      byTool[r.tool] = (byTool[r.tool] || 0) + 1
-      if (r.project_name) {
-        byProject[r.project_name] = (byProject[r.project_name] || 0) + 1
-      }
-    }
-    return { byTool, byProject, total: rows.length }
+    const toolRows = this.db.prepare('SELECT tool, COUNT(*) as cnt FROM unified_session WHERE archived = 0 GROUP BY tool').all() as Array<{ tool: string; cnt: number }>
+    for (const r of toolRows) byTool[r.tool] = r.cnt
+    const projRows = this.db.prepare('SELECT project_name, COUNT(*) as cnt FROM unified_session WHERE archived = 0 AND project_name IS NOT NULL GROUP BY project_name').all() as Array<{ project_name: string; cnt: number }>
+    for (const r of projRows) byProject[r.project_name] = r.cnt
+    const total = this.db.prepare('SELECT COUNT(*) as cnt FROM unified_session WHERE archived = 0').get() as { cnt: number }
+    return { byTool, byProject, total: total.cnt }
   }
 
   getStatusCounts(): { active: number; starred: number; pinned: number; archived: number } {

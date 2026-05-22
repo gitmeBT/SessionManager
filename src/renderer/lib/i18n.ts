@@ -119,6 +119,15 @@ const t: Record<string, Record<Lang, string>> = {
   'detail.order.newFirst': row('Newest first', '最新优先'),
   'detail.order.oldFirst': row('Oldest first', '最早优先'),
   'sidebar.openInFinder': row('Open in Finder', '在 Finder 中打开'),
+  'sidebar.copyPath': row('Copy Path', '复制路径'),
+  'sidebar.openInTerminal': row('Open in Terminal', '在终端中打开'),
+  'sidebar.openInVscode': row('Open in VS Code', '在 VS Code 中打开'),
+  'sidebar.opened': row('Done', '已打开'),
+  'sidebar.copied': row('Copied', '已复制'),
+  'sidebar.pinProject': row('Pin Project', '置顶项目'),
+  'sidebar.unpinProject': row('Unpin Project', '取消置顶'),
+  'sidebar.pinned': row('Pinned', '已置顶'),
+  'sidebar.unpinned': row('Unpinned', '已取消置顶'),
 
   // ConfirmModal
   'confirm.cancel': row('Cancel', '取消', { es:'Cancelar', ar:'إلغاء', hi:'रद्द करें', pt:'Cancelar', bn:'বাতিল', ru:'Отмена', ja:'キャンセル', ko:'취소', fr:'Annuler', de:'Abbrechen', tr:'İptal', it:'Annulla', th:'ยกเลิก', vi:'Hủy', pl:'Anuluj', nl:'Annuleren', uk:'Скасувати', id:'Batal' }),

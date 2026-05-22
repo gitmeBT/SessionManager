@@ -1,6 +1,7 @@
 import { memo, useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Sun, Moon, RefreshCw, FolderOpen, Folder, FileText, Star, Pin, Archive, CircleDot, Layers, Settings, ChevronRight, Search, FolderSearch } from 'lucide-react'
+import { Sun, Moon, RefreshCw, FolderOpen, Folder, FileText, Star, Pin, Archive, CircleDot, Layers, Settings, ChevronRight, Search, FolderSearch, Copy, Terminal, Code } from 'lucide-react'
+import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../stores/useStore'
 import { cn } from '../lib/utils'
@@ -70,6 +71,8 @@ export function Sidebar() {
   const expandedProject = useStore(s => s.expandedProject)
   const projectFiles = useStore(s => s.projectFiles)
   const toggleProjectExpand = useStore(s => s.toggleProjectExpand)
+  const pinnedProjects = useStore(s => s.pinnedProjects)
+  const toggleProjectPin = useStore(s => s.toggleProjectPin)
   const theme = useStore(s => s.theme)
   const toggleTheme = useStore(s => s.toggleTheme)
   const lang = useStore(s => s.language)
@@ -115,10 +118,17 @@ export function Sidebar() {
   }, [counts.byTool])
 
   const filteredProjects = useMemo(() => {
-    if (!projectSearch) return projectNames
-    const q = projectSearch.toLowerCase()
-    return projectNames.filter(n => n.toLowerCase().includes(q))
-  }, [projectNames, projectSearch])
+    let list = projectNames
+    if (projectSearch) {
+      const q = projectSearch.toLowerCase()
+      list = list.filter(n => n.toLowerCase().includes(q))
+    }
+    return [...list].sort((a, b) => {
+      const aP = pinnedProjects.includes(a) ? 0 : 1
+      const bP = pinnedProjects.includes(b) ? 0 : 1
+      return aP - bP
+    })
+  }, [projectNames, projectSearch, pinnedProjects])
 
   const [projCtx, setProjCtx] = useState<{ x: number; y: number; name: string } | null>(null)
   const projCtxRef = useRef<HTMLDivElement>(null)
@@ -130,10 +140,15 @@ export function Sidebar() {
       if (projCtxRef.current && projCtxRef.current.contains(e.target as Node)) return
       close()
     }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
     document.addEventListener('click', onClick)
     document.addEventListener('contextmenu', onClick)
-    document.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') close() })
-    return () => { document.removeEventListener('click', onClick); document.removeEventListener('contextmenu', onClick) }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('click', onClick)
+      document.removeEventListener('contextmenu', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [projCtx])
 
   return (
@@ -230,7 +245,7 @@ export function Sidebar() {
                     <div
                       onClick={() => setFilter('selectedProject', name)}
                       onDoubleClick={() => toggleProjectExpand(name)}
-                      onContextMenu={e => { e.preventDefault(); setProjCtx({ x: e.clientX, y: e.clientY, name }) }}
+                      onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setProjCtx({ x: e.clientX, y: e.clientY, name }) }}
                       title={translate('sidebar.doubleClickExpand', lang)}
                       className={cn('mt-0.5', itemCls(selectedProject === name))}
                     >
@@ -239,6 +254,7 @@ export function Sidebar() {
                         : <Folder size={14} className="shrink-0 text-foreground-muted" />
                       }
                       <span className="flex-1 truncate">{name}</span>
+                      {pinnedProjects.includes(name) && <Pin size={10} fill="currentColor" className="shrink-0 text-primary" />}
                       <span className="shrink-0 text-[10px] text-foreground-muted">{counts.byProject[name] || 0}</span>
                     </div>
                     {isExpanded && files && (
@@ -278,7 +294,7 @@ export function Sidebar() {
                 : counts.archived
               return (
                 <div key={status} onClick={() => setFilter('selectedStatus', status)} className={itemCls(selectedStatus === status)}>
-                  <Icon size={13} className={cn('shrink-0', status === 'active' && 'text-green', status === 'starred' && 'text-orange')} />
+                  <Icon size={13} className={cn('shrink-0', status === 'active' && 'text-green', status === 'starred' && 'text-orange', status === 'archived' && 'text-amber-500')} />
                   <span>{translate(`sidebar.status.${status}` as any, lang)}</span>
                   <span className="ml-auto text-[10px] text-foreground-muted">{count}</span>
                 </div>
@@ -295,20 +311,71 @@ export function Sidebar() {
           </div>
         )}
       </div>
-      {projCtx && (
+      {projCtx && createPortal(
         <div
           ref={projCtxRef}
-          style={{ position: 'fixed', zIndex: 9999, left: projCtx.x, top: projCtx.y, minWidth: 150 }}
+          style={{ position: 'fixed', zIndex: 9999, left: projCtx.x, top: projCtx.y, minWidth: 170 }}
           className="rounded-lg border border-border bg-card/80 p-1 shadow-2xl backdrop-blur-xl"
         >
           <div
-            onClick={() => { window.api.openInFinder(projCtx.name); setProjCtx(null) }}
+            onClick={() => {
+              toggleProjectPin(projCtx.name)
+              toast.success(pinnedProjects.includes(projCtx.name) ? translate('sidebar.unpinned', lang) : translate('sidebar.pinned', lang))
+              setProjCtx(null)
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-hover"
+          >
+            <Pin size={13} />
+            {pinnedProjects.includes(projCtx.name) ? translate('sidebar.unpinProject', lang) : translate('sidebar.pinProject', lang)}
+          </div>
+          <div className="my-0.5 h-px bg-border" />
+          <div
+            onClick={() => {
+              toast.success(translate('sidebar.opened', lang))
+              window.api.openInFinder(projCtx.name)
+              setProjCtx(null)
+            }}
             className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-hover"
           >
             <FolderSearch size={13} />
             {translate('sidebar.openInFinder', lang)}
           </div>
-        </div>
+          <div
+            onClick={() => {
+              toast.success(translate('sidebar.copied', lang))
+              window.api.copyProjectPath(projCtx.name)
+              setProjCtx(null)
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-hover"
+          >
+            <Copy size={13} />
+            {translate('sidebar.copyPath', lang)}
+          </div>
+          <div
+            onClick={async () => {
+              toast.success(translate('sidebar.opened', lang))
+              const path = await window.api.getProjectPath(projCtx.name)
+              if (path) window.api.openSystemTerminal('cd "' + path + '"', path, useStore.getState().terminalApp || undefined)
+              setProjCtx(null)
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-hover"
+          >
+            <Terminal size={13} />
+            {translate('sidebar.openInTerminal', lang)}
+          </div>
+          <div
+            onClick={() => {
+              toast.success(translate('sidebar.opened', lang))
+              window.api.openInVscode(projCtx.name)
+              setProjCtx(null)
+            }}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-hover"
+          >
+            <Code size={13} />
+            {translate('sidebar.openInVscode', lang)}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )

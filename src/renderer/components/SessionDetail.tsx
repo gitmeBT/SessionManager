@@ -212,7 +212,12 @@ export function SessionDetail() {
             <button
               onClick={() => handleConfirm(translate('detail.confirm.archive', lang as any), () => toggleArchive(s.id))}
               title={translate('detail.archive', lang as any)}
-              className="flex cursor-pointer items-center justify-center rounded-md p-1.5 text-foreground-muted transition-all hover:bg-hover hover:text-foreground active:scale-90 hover:[transform:rotateY(180deg)] [transform-style:preserve-3d] duration-300"
+              className={cn(
+                'flex cursor-pointer items-center justify-center rounded-md p-1.5 transition-all active:scale-90 hover:[transform:rotateY(180deg)] [transform-style:preserve-3d] duration-300',
+                s.archived
+                  ? 'bg-amber-500/15 text-amber-500'
+                  : 'text-foreground-muted hover:bg-hover hover:text-foreground'
+              )}
             >
               <Archive size={14} />
             </button>
@@ -275,9 +280,10 @@ export function SessionDetail() {
           <div className="px-10 py-10 text-center text-[13px] text-foreground-muted">{translate('detail.noMessages', lang as any)}</div>
         ) : (
           <Virtuoso
+            key={reverseOrder ? 'rev' : 'fwd'}
             ref={virtuosoRef}
             data={displayMessages}
-            initialTopMostItemIndex={0}
+            initialTopMostItemIndex={reverseOrder ? displayMessages.length - 1 : 0}
             itemContent={(index, msg) => <MessageBubble msg={msg} index={index} lang={lang} />}
             components={{
               Header: () => <div style={{ height: 24 }} />,

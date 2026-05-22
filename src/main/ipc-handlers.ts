@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, shell } from 'electron'
+import { ipcMain, BrowserWindow, shell, clipboard } from 'electron'
 import { DatabaseManager } from './database'
 import { Indexer } from './indexer'
 import { PtyManager } from './pty-manager'
@@ -35,7 +35,30 @@ export function registerIpcHandlers(
 
   ipcMain.handle('open-in-finder', async (_e, projectName: string) => {
     const path = db.getProjectPath(projectName)
-    if (path) shell.showItemInFolder(path)
+    if (!path) return false
+    shell.showItemInFolder(path)
+    return true
+  })
+
+  ipcMain.handle('copy-project-path', async (_e, projectName: string) => {
+    const path = db.getProjectPath(projectName)
+    if (!path) return false
+    clipboard.writeText(path)
+    return true
+  })
+
+  ipcMain.handle('open-in-vscode', async (_e, projectName: string) => {
+    const path = db.getProjectPath(projectName)
+    if (!path) return false
+    const { execFile } = await import('child_process')
+    execFile('code', [path], (err) => {
+      if (err) console.error('[IPC] open-in-vscode failed:', err.message)
+    })
+    return true
+  })
+
+  ipcMain.handle('get-project-path', async (_e, projectName: string) => {
+    return db.getProjectPath(projectName) || null
   })
 
   ipcMain.handle('list-project-files', async (_e, projectName: string) => {
@@ -128,15 +151,15 @@ export function registerIpcHandlers(
     const fs = await import('fs')
     const path = await import('path')
     const os = await import('os')
-    const { exec } = await import('child_process')
+    const { execFile } = await import('child_process')
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sm-resume-'))
     const scriptPath = path.join(tmpDir, 'resume.command')
     const workDir = cwd || process.env.HOME || '/'
-    fs.writeFileSync(scriptPath, `#!/bin/bash\ncd "${workDir}"\n${command}\n`)
+    fs.writeFileSync(scriptPath, `#!/bin/bash\ncd "${workDir.replace(/"/g, '\\"')}"\n${command.replace(/"/g, '\\"')}\n`)
     fs.chmodSync(scriptPath, 0o755)
 
     if (terminalApp) {
-      exec(`open -a "${terminalApp}" "${scriptPath}"`)
+      execFile('open', ['-a', terminalApp, scriptPath])
     } else {
       shell.openPath(scriptPath)
     }

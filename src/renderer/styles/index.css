@@ -104,13 +104,13 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-size: 13px;
-    overflow: hidden;
     height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
 
   #root {
     height: 100vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
   }

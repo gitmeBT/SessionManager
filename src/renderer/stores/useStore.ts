@@ -19,6 +19,8 @@ declare global {
       getSessionCount: () => Promise<number>
       getCounts: () => Promise<{ byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; pinned: number; archived: number }>
       openInFinder: (projectName: string) => Promise<void>
+      copyProjectPath: (projectName: string) => Promise<void>
+      openInVscode: (projectName: string) => Promise<void>
       listProjectFiles: (projectName: string) => Promise<Array<{ name: string; isDir: boolean }>>
       toggleStar: (sessionId: string) => Promise<number>
       toggleArchive: (sessionId: string) => Promise<number>
@@ -51,12 +53,14 @@ interface AppState {
   detailLoading: boolean
   counts: { byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; pinned: number; archived: number }
   loading: boolean
+  _sessionReqId: number
   sortBy: string
   terminalTabs: TerminalTab[]
   activeTabId: string | null
   showTerminal: boolean
   expandedProject: string | null
   projectFiles: Record<string, Array<{ name: string; isDir: boolean }>>
+  pinnedProjects: string[]
   terminalFullscreen: boolean
   theme: 'dark' | 'light'
   resumeAction: 'system' | 'builtin'
@@ -81,6 +85,7 @@ interface AppState {
   closeTab: (tabId: string) => Promise<void>
   setActiveTab: (tabId: string) => void
   toggleProjectExpand: (projectName: string) => void
+  toggleProjectPin: (projectName: string) => void
   setTerminalFullscreen: (v: boolean) => void
   toggleTheme: () => void
   setResumeAction: (v: 'system' | 'builtin') => void
@@ -103,12 +108,14 @@ export const useStore = create<AppState>((set, get) => ({
   detailLoading: false,
   counts: { byTool: {}, byProject: {}, total: 0, active: 0, starred: 0, pinned: 0, archived: 0 },
   loading: false,
+  _sessionReqId: 0,
   sortBy: 'updatedAt',
   terminalTabs: [],
   activeTabId: null,
   showTerminal: false,
   expandedProject: null,
   projectFiles: {},
+  pinnedProjects: (() => { try { return JSON.parse(localStorage.getItem('pinnedProjects') || '[]') } catch { return [] } })(),
   terminalFullscreen: false,
   theme: (localStorage.getItem('theme') as 'dark' | 'light') || 'dark',
   resumeAction: (localStorage.getItem('resumeAction') as 'system' | 'builtin') || 'system',
@@ -125,7 +132,8 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   loadSessions: async () => {
-    set({ loading: true })
+    const reqId = get()._sessionReqId + 1
+    set({ loading: true, _sessionReqId: reqId })
     const { selectedTool, selectedProject, selectedStatus, searchQuery } = get()
     const sessions = await window.api.getSessions({
       tool: selectedTool,
@@ -133,6 +141,7 @@ export const useStore = create<AppState>((set, get) => ({
       status: selectedStatus,
       search: searchQuery || undefined
     })
+    if (get()._sessionReqId !== reqId) return
     set({ sessions, loading: false })
   },
 
@@ -276,6 +285,15 @@ export const useStore = create<AppState>((set, get) => ({
       set({ projectFiles: { ...projectFiles, [projectName]: files } })
     }
     set({ expandedProject: projectName })
+  },
+
+  toggleProjectPin: (projectName: string) => {
+    const pinned = get().pinnedProjects
+    const next = pinned.includes(projectName)
+      ? pinned.filter(n => n !== projectName)
+      : [...pinned, projectName]
+    set({ pinnedProjects: next })
+    localStorage.setItem('pinnedProjects', JSON.stringify(next))
   },
 
   setTerminalFullscreen: (v: boolean) => {
