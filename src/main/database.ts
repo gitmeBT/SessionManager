@@ -189,7 +189,8 @@ export class DatabaseManager {
       params.push(filter.projectName)
     }
     if (filter.status === 'active') {
-      sql += ' AND is_active = 1 AND archived = 0'
+      sql += ' AND updated_at > ? AND archived = 0'
+      params.push(Math.floor(Date.now() / 1000) - 86400)
     } else if (filter.status === 'starred') {
       sql += ' AND starred = 1 AND archived = 0'
     } else if (filter.status === 'pinned') {
@@ -264,14 +265,15 @@ export class DatabaseManager {
   }
 
   getStatusCounts(): { active: number; starred: number; pinned: number; archived: number } {
+    const cutoff = Math.floor(Date.now() / 1000) - 86400
     const r = this.db.prepare(`
       SELECT
-        SUM(CASE WHEN is_active = 1 AND archived = 0 THEN 1 ELSE 0 END) as active,
+        SUM(CASE WHEN updated_at > ? AND archived = 0 THEN 1 ELSE 0 END) as active,
         SUM(CASE WHEN starred = 1 AND archived = 0 THEN 1 ELSE 0 END) as starred,
         SUM(CASE WHEN pinned = 1 AND archived = 0 THEN 1 ELSE 0 END) as pinned,
         SUM(CASE WHEN archived = 1 THEN 1 ELSE 0 END) as archived
       FROM unified_session
-    `).get() as { active: number; starred: number; pinned: number; archived: number }
+    `).get(cutoff) as { active: number; starred: number; pinned: number; archived: number }
     return { active: r.active || 0, starred: r.starred || 0, pinned: r.pinned || 0, archived: r.archived || 0 }
   }
 

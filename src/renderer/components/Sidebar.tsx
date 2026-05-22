@@ -1,5 +1,7 @@
-import { memo, useState, useRef, useCallback, useMemo } from 'react'
-import { Sun, Moon, RefreshCw, FolderOpen, Folder, FileText, Star, Pin, Archive, CircleDot, Layers, Settings, ChevronRight } from 'lucide-react'
+import { memo, useState, useRef, useCallback, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import { Sun, Moon, RefreshCw, FolderOpen, Folder, FileText, Star, Pin, Archive, CircleDot, Layers, Settings, ChevronRight, Search, FolderSearch } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../stores/useStore'
 import { cn } from '../lib/utils'
 import { translate } from '../lib/i18n'
@@ -76,6 +78,7 @@ export function Sidebar() {
   const [collapsedTool, setCollapsedTool] = useState(false)
   const [collapsedProject, setCollapsedProject] = useState(false)
   const [collapsedStatus, setCollapsedStatus] = useState(false)
+  const [projectSearch, setProjectSearch] = useState('')
   const [statusHeight, setStatusHeight] = useState(220)
   const resizeRef = useRef<{ startY: number; startH: number } | null>(null)
 
@@ -110,6 +113,28 @@ export function Sidebar() {
     const tools = ['opencode', 'claude', 'codex'] as const
     return [...tools].sort((a, b) => (counts.byTool[b] || 0) - (counts.byTool[a] || 0))
   }, [counts.byTool])
+
+  const filteredProjects = useMemo(() => {
+    if (!projectSearch) return projectNames
+    const q = projectSearch.toLowerCase()
+    return projectNames.filter(n => n.toLowerCase().includes(q))
+  }, [projectNames, projectSearch])
+
+  const [projCtx, setProjCtx] = useState<{ x: number; y: number; name: string } | null>(null)
+  const projCtxRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!projCtx) return
+    const close = () => setProjCtx(null)
+    const onClick = (e: MouseEvent) => {
+      if (projCtxRef.current && projCtxRef.current.contains(e.target as Node)) return
+      close()
+    }
+    document.addEventListener('click', onClick)
+    document.addEventListener('contextmenu', onClick)
+    document.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') close() })
+    return () => { document.removeEventListener('click', onClick); document.removeEventListener('contextmenu', onClick) }
+  }, [projCtx])
 
   return (
     <div className="flex w-[260px] min-w-[260px] flex-col overflow-hidden border-r border-border bg-background-secondary select-none">
@@ -171,7 +196,24 @@ export function Sidebar() {
 
       {/* Project filter */}
       <div className="flex min-h-[120px] flex-1 flex-col overflow-hidden border-b border-border px-4 py-2">
-        <SectionHeader label={translate('sidebar.project', lang)} collapsed={collapsedProject} onToggle={() => setCollapsedProject(!collapsedProject)} />
+        <div className="mb-2 flex items-center gap-2">
+          <div onClick={() => setCollapsedProject(!collapsedProject)} className="flex cursor-pointer items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-foreground-muted select-none hover:text-foreground-secondary">
+            <ChevronRight size={10} className={cn('transition-transform', !collapsedProject && 'rotate-90')} />
+            {translate('sidebar.project', lang)}
+          </div>
+          {!collapsedProject && (
+            <div className="relative ml-auto">
+              <Search size={10} className="absolute left-1.5 top-1/2 -translate-y-1/2 text-foreground-muted" />
+              <input
+                type="text"
+                value={projectSearch}
+                onChange={e => setProjectSearch(e.target.value)}
+                placeholder=""
+                className="w-20 rounded border border-border bg-background py-0.5 pr-2 pl-6 text-[10px] text-foreground transition-all focus:w-28 focus:border-primary"
+              />
+            </div>
+          )}
+        </div>
         {!collapsedProject && (
           <>
             <div onClick={() => setFilter('selectedProject', 'all')} className={itemCls(selectedProject === 'all')}>
@@ -180,7 +222,7 @@ export function Sidebar() {
               <span className="ml-auto text-[10px] text-foreground-muted">{counts.total}</span>
             </div>
             <div className="flex-1 overflow-y-auto">
-              {projectNames.map(name => {
+              {filteredProjects.map(name => {
                 const isExpanded = expandedProject === name
                 const files = projectFiles[name]
                 return (
@@ -188,6 +230,7 @@ export function Sidebar() {
                     <div
                       onClick={() => setFilter('selectedProject', name)}
                       onDoubleClick={() => toggleProjectExpand(name)}
+                      onContextMenu={e => { e.preventDefault(); setProjCtx({ x: e.clientX, y: e.clientY, name }) }}
                       title={translate('sidebar.doubleClickExpand', lang)}
                       className={cn('mt-0.5', itemCls(selectedProject === name))}
                     >
@@ -252,6 +295,21 @@ export function Sidebar() {
           </div>
         )}
       </div>
+      {projCtx && (
+        <div
+          ref={projCtxRef}
+          style={{ position: 'fixed', zIndex: 9999, left: projCtx.x, top: projCtx.y, minWidth: 150 }}
+          className="rounded-lg border border-border bg-card/80 p-1 shadow-2xl backdrop-blur-xl"
+        >
+          <div
+            onClick={() => { window.api.openInFinder(projCtx.name); setProjCtx(null) }}
+            className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-hover"
+          >
+            <FolderSearch size={13} />
+            {translate('sidebar.openInFinder', lang)}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

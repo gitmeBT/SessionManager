@@ -1,5 +1,5 @@
-import { memo, useCallback, useMemo, useState } from 'react'
-import { ArrowLeft, Star, Pin, Archive, Trash2, Play, ChevronDown, ChevronUp } from 'lucide-react'
+import { memo, useCallback, useMemo, useState, useRef, useEffect } from 'react'
+import { ArrowLeft, Star, Pin, Archive, Trash2, Play, ChevronDown, ChevronUp, ArrowUpDown, ArrowDownToLine } from 'lucide-react'
 import { Virtuoso } from 'react-virtuoso'
 import { useStore, ChatMessage } from '../stores/useStore'
 import { ToolIcon } from './Sidebar'
@@ -117,6 +117,23 @@ export function SessionDetail() {
   const terminalApp = useStore(s => s.terminalApp)
   const lang = useStore(s => s.language)
 
+  const [reverseOrder, setReverseOrder] = useState(false)
+  const [showScrollBottom, setShowScrollBottom] = useState(false)
+  const virtuosoRef = useRef<any>(null)
+
+  const displayMessages = useMemo(() => {
+    if (!reverseOrder) return detailMessages
+    return [...detailMessages].reverse()
+  }, [detailMessages, reverseOrder])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'ArrowLeft') closeDetail()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [closeDetail])
+
   const textCount = useMemo(() => detailMessages.filter(m => m.type === 'text').length, [detailMessages])
   const toolCount = useMemo(() => detailMessages.filter(m => m.type === 'tool').length, [detailMessages])
 
@@ -149,19 +166,17 @@ export function SessionDetail() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-background">
       {/* Header */}
-      <div className="shrink-0 border-b border-border bg-background-secondary/80 px-5 py-4 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
+      <div className="shrink-0 border-b border-border bg-background-secondary/80 px-5 py-3 backdrop-blur-sm">
+        {/* Top row: back + title + actions */}
+        <div className="flex items-center gap-2">
           <button
             onClick={closeDetail}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-border/50 bg-hover/50 px-3 py-1.5 text-xs text-foreground-secondary transition-all hover:border-primary hover:bg-primary hover:text-white"
+            className="flex cursor-pointer items-center justify-center rounded-md p-1.5 text-foreground-muted transition-all hover:bg-hover hover:text-foreground"
           >
-            <ArrowLeft size={12} />
-            {translate('detail.back', lang as any)}
+            <ArrowLeft size={16} />
           </button>
 
-          <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg', `bg-${toolBgColor}`)}>
-            <ToolIcon tool={s.tool} size={17} />
-          </div>
+          <ToolIcon tool={s.tool} size={16} />
 
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold text-foreground">
@@ -169,7 +184,7 @@ export function SessionDetail() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <button
               onClick={() => toggleStar(s.id)}
               title={s.starred ? translate('detail.star', lang as any) : translate('detail.unstar', lang as any)}
@@ -221,8 +236,8 @@ export function SessionDetail() {
           </button>
         </div>
 
-        {/* Metadata pills */}
-        <div className="ml-[52px] mt-3 flex flex-wrap gap-2">
+        {/* Metadata pills — aligned with title */}
+        <div className="mt-2 flex flex-wrap gap-1.5 pl-8">
           {s.projectName && (
             <span className="max-w-[180px] truncate rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-primary">{s.projectName}</span>
           )}
@@ -242,25 +257,43 @@ export function SessionDetail() {
           {s.cost > 0 && (
             <span className="rounded-md bg-hover/50 px-2 py-0.5 text-[10px] text-orange">{formatCost(s.cost)}</span>
           )}
+          <button
+            onClick={() => setReverseOrder(!reverseOrder)}
+            className="ml-1 flex cursor-pointer items-center rounded-md bg-hover/50 px-1.5 py-0.5 text-[10px] text-foreground-muted transition-colors hover:text-foreground"
+            title={reverseOrder ? translate('detail.order.oldFirst', lang as any) : translate('detail.order.newFirst', lang as any)}
+          >
+            {reverseOrder ? <ArrowUpDown size={11} className="rotate-180" /> : <ArrowUpDown size={11} />}
+          </button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden">
         {detailLoading ? (
           <div className="px-10 py-10 text-center text-foreground-muted">{translate('detail.loading', lang as any)}</div>
         ) : detailMessages.length === 0 ? (
           <div className="px-10 py-10 text-center text-[13px] text-foreground-muted">{translate('detail.noMessages', lang as any)}</div>
         ) : (
           <Virtuoso
-            data={detailMessages}
+            ref={virtuosoRef}
+            data={displayMessages}
             initialTopMostItemIndex={0}
             itemContent={(index, msg) => <MessageBubble msg={msg} index={index} lang={lang} />}
             components={{
               Header: () => <div style={{ height: 24 }} />,
               Footer: () => <div style={{ height: 24 }} />,
             }}
+            followOutput="smooth"
+            atBottomStateChange={atBottom => setShowScrollBottom(!atBottom)}
           />
+        )}
+        {showScrollBottom && !detailLoading && detailMessages.length > 0 && (
+          <button
+            onClick={() => virtuosoRef.current?.scrollToIndex({ index: displayMessages.length - 1, align: 'end' })}
+            className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-background-secondary/90 px-3 py-1.5 text-[10px] font-medium text-foreground-secondary shadow-lg backdrop-blur-sm transition-all hover:border-primary hover:text-primary"
+          >
+            <ArrowDownToLine size={11} />
+          </button>
         )}
       </div>
     </div>

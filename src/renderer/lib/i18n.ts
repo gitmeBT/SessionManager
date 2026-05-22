@@ -91,6 +91,7 @@ const t: Record<string, Record<Lang, string>> = {
   'ctx.unstar': row('Unstar', '取消标星', { es:'Quitar destaque', ar:'إلغاء التمييز', hi:'तारा हटाएं', pt:'Desfavoritar', bn:'তারা সরান', ru:'Убрать', ja:'スター解除', ko:'즐겨찾기 해제', fr:'Retirer', de:'Markierung aufheben', tr:'Yıldızı kaldır', it:'Rimuovi', th:'ยกเลิกดาว', vi:'Bỏ sao', pl:'Odznacz', nl:'Ster verwijderen', uk:'Прибрати', id:'Hapus bintang' }),
   'ctx.archive': row('Archive', '归档', { es:'Archivar', ar:'أرشفة', hi:'संग्रहित', pt:'Arquivar', bn:'সংরক্ষণ', ru:'В архив', ja:'アーカイブ', ko:'보관', fr:'Archiver', de:'Archivieren', tr:'Arşivle', it:'Archivia', th:'เก็บถาวร', vi:'Lưu trữ', pl:'Zarchiwizuj', nl:'Archiveren', uk:'В архів', id:'Arsipkan' }),
   'ctx.delete': row('Delete', '删除', { es:'Eliminar', ar:'حذف', hi:'हटाएं', pt:'Excluir', bn:'মুছুন', ru:'Удалить', ja:'削除', ko:'삭제', fr:'Supprimer', de:'Löschen', tr:'Sil', it:'Elimina', th:'ลบ', vi:'Xóa', pl:'Usuń', nl:'Verwijderen', uk:'Видалити', id:'Hapus' }),
+  'ctx.viewDetail': row('View Detail', '查看详情'),
 
   // SessionDetail
   'detail.back': row('Back', '返回', { es:'Volver', ar:'رجوع', hi:'वापस', pt:'Voltar', bn:'ফিরে', ru:'Назад', ja:'戻る', ko:'뒤로', fr:'Retour', de:'Zurück', tr:'Geri', it:'Indietro', th:'กลับ', vi:'Quay lại', pl:'Wstecz', nl:'Terug', uk:'Назад', id:'Kembali' }),
@@ -115,6 +116,9 @@ const t: Record<string, Record<Lang, string>> = {
   'detail.msgs': row('msgs', '条消息', { es:'mensajes', ar:'رسائل', hi:'संदेश', pt:'mensagens', bn:'বার্তা', ru:'сообщ.', ja:'件', ko:'건', fr:'messages', de:'Nachr.', tr:'msj', it:'messaggi', th:'ข้อความ', vi:'tin nhắn', pl:'wiad.', nl:'berichten', uk:'повід.', id:'pesan' }),
   'detail.tools': row('tools', '工具', { es:'herramientas', ar:'أدوات', hi:'टूल', pt:'ferramentas', bn:'টুল', ru:'инструменты', ja:'ツール', ko:'도구', fr:'outils', de:'Werkzeuge', tr:'araçlar', it:'strumenti', th:'เครื่องมือ', vi:'công cụ', pl:'narzędzia', nl:'gereedschappen', uk:'інструменти', id:'alat' }),
   'detail.tokens': row('tokens', 'tokens'),
+  'detail.order.newFirst': row('Newest first', '最新优先'),
+  'detail.order.oldFirst': row('Oldest first', '最早优先'),
+  'sidebar.openInFinder': row('Open in Finder', '在 Finder 中打开'),
 
   // ConfirmModal
   'confirm.cancel': row('Cancel', '取消', { es:'Cancelar', ar:'إلغاء', hi:'रद्द करें', pt:'Cancelar', bn:'বাতিল', ru:'Отмена', ja:'キャンセル', ko:'취소', fr:'Annuler', de:'Abbrechen', tr:'İptal', it:'Annulla', th:'ยกเลิก', vi:'Hủy', pl:'Anuluj', nl:'Annuleren', uk:'Скасувати', id:'Batal' }),

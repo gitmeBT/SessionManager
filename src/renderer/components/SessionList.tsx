@@ -2,7 +2,7 @@ import { memo, useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GroupedVirtuoso } from 'react-virtuoso'
-import { Pin, Star, Archive, Trash2, Play, Search, Flame } from 'lucide-react'
+import { Pin, Star, Archive, Trash2, Play, Search, Flame, Eye } from 'lucide-react'
 import { useStore } from '../stores/useStore'
 import { ToolIcon } from './Sidebar'
 import { cn } from '../lib/utils'
@@ -57,13 +57,14 @@ function formatCost(n: number): string {
 
 type CtxMenuState = { x: number; y: number; sessionId: string; session: any } | null
 
-const ContextMenu = memo(function ContextMenu({ ctx, onClose, togglePin, toggleStar, toggleArchive, deleteSession }: {
+const ContextMenu = memo(function ContextMenu({ ctx, onClose, togglePin, toggleStar, toggleArchive, deleteSession, openDetail }: {
   ctx: CtxMenuState
   onClose: () => void
   togglePin: (id: string) => void
   toggleStar: (id: string) => void
   toggleArchive: (id: string) => void
   deleteSession: (id: string) => void
+  openDetail: (s: any) => void
 }) {
   const lang = useStore(s => s.language)
   const ref = useRef<HTMLDivElement>(null)
@@ -115,6 +116,7 @@ const ContextMenu = memo(function ContextMenu({ ctx, onClose, togglePin, toggleS
 
   const s = ctx.session
   const items = [
+    { icon: Eye, label: translate('ctx.viewDetail', lang), action: () => { onClose(); openDetail(s) } },
     { icon: Pin, label: s.pinned ? translate('ctx.unpin', lang) : translate('ctx.pin', lang), action: () => togglePin(ctx.sessionId) },
     { icon: Star, label: s.starred ? translate('ctx.unstar', lang) : translate('ctx.star', lang), action: () => toggleStar(ctx.sessionId) },
     { icon: Archive, label: translate('ctx.archive', lang), action: () => { onClose(); useStore.getState().confirm(translate('confirm.archive', lang)).then(ok => { if (ok) toggleArchive(ctx.sessionId) }) } },
@@ -237,7 +239,7 @@ export function SessionList() {
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setSelectedIndex(i => Math.max(i - 1, 0))
-      } else if (e.key === 'Enter' && itemData[selectedIndex]) {
+      } else if ((e.key === 'Enter' || e.key === 'ArrowRight') && itemData[selectedIndex]) {
         e.preventDefault()
         openDetail(itemData[selectedIndex].session)
       }
@@ -248,9 +250,12 @@ export function SessionList() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Search + sort bar */}
-      <div className="flex shrink-0 flex-col gap-3 border-b border-border px-6 py-4">
-        <div className="relative">
+      {/* Search + sort bar — top portion is draggable */}
+      <div
+        className="flex shrink-0 flex-col gap-3 border-b border-border px-6 py-4"
+        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      >
+        <div className="relative" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground-muted" />
           <input
             type="text"
@@ -260,7 +265,7 @@ export function SessionList() {
             className="w-full rounded-lg border border-border bg-background py-2.5 pr-3 pl-9 text-xs text-foreground transition-colors focus:border-primary"
           />
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           {SORT_KEYS.map(key => (
             <button
               key={key}
@@ -311,7 +316,7 @@ export function SessionList() {
           />
         )}
       </div>
-      <ContextMenu ctx={ctxMenu} onClose={closeCtx} togglePin={togglePin} toggleStar={toggleStar} toggleArchive={toggleArchive} deleteSession={deleteSession} />
+      <ContextMenu ctx={ctxMenu} onClose={closeCtx} togglePin={togglePin} toggleStar={toggleStar} toggleArchive={toggleArchive} deleteSession={deleteSession} openDetail={openDetail} />
     </div>
   )
 }

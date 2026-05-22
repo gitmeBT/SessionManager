@@ -33,6 +33,11 @@ export function registerIpcHandlers(
     return { ...db.getCounts(), ...db.getStatusCounts() }
   })
 
+  ipcMain.handle('open-in-finder', async (_e, projectName: string) => {
+    const path = db.getProjectPath(projectName)
+    if (path) shell.showItemInFolder(path)
+  })
+
   ipcMain.handle('list-project-files', async (_e, projectName: string) => {
     const path = db.getProjectPath(projectName)
     if (!path) return []

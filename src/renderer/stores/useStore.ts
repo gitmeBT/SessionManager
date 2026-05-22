@@ -18,6 +18,7 @@ declare global {
       getProjectNames: () => Promise<string[]>
       getSessionCount: () => Promise<number>
       getCounts: () => Promise<{ byTool: Record<string, number>; byProject: Record<string, number>; total: number; active: number; starred: number; pinned: number; archived: number }>
+      openInFinder: (projectName: string) => Promise<void>
       listProjectFiles: (projectName: string) => Promise<Array<{ name: string; isDir: boolean }>>
       toggleStar: (sessionId: string) => Promise<number>
       toggleArchive: (sessionId: string) => Promise<number>
